@@ -1,45 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Cube</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: #000;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-        }
-        
-        #container {
-            width: 100vw;
-            height: 100vh;
-        }
-        
-        .error {
-            color: red;
-            text-align: center;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-    </style>
-</head>
-<body>
-    <div id="container"></div>
-    <button id="resetCameraBtn" style="position: absolute; top: 20px; left: 20px; z-index: 10;">Reset Camera</button>
-    <button id="pauseBtn" style="position: absolute; top: 60px; left: 20px; z-index: 10;">Pause</button>
-    <div id="error" class="error" style="display: none;"></div>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="cube.js"></script>
-    <script src="plane.js"></script>
-    <script src="rigidbodysim.js"></script>
-    <script src="camera-controls.js"></script>
-    <script src="scene.js"></script>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Three.js Cube</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                background: #000;
+                overflow: hidden;
+                font-family: Arial, sans-serif;
+            }
 
-</body>
+            #container {
+                width: 100vw;
+                height: 100vh;
+            }
+
+            .error {
+                color: red;
+                text-align: center;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+        </style>
+    </head>
+    <body>
+        <div id="container"></div>
+        <button
+            id="resetCameraBtn"
+            style="position: absolute; top: 20px; left: 20px; z-index: 10"
+        >
+            Reset Camera
+        </button>
+        <button
+            id="pauseBtn"
+            style="position: absolute; top: 60px; left: 20px; z-index: 10"
+        >
+            Pause
+        </button>
+        <button
+            id="resetFlatBtn"
+            style="position: absolute; top: 100px; left: 20px; z-index: 10"
+        >
+            Reset Flat
+        </button>
+        <button
+            id="reset15Btn"
+            style="position: absolute; top: 140px; left: 20px; z-index: 10"
+        >
+            Reset 15°
+        </button>
+        <button
+            id="reset45Btn"
+            style="position: absolute; top: 180px; left: 20px; z-index: 10"
+        >
+            Reset 45°
+        </button>
+        <div id="error" class="error" style="display: none"></div>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+        <script src="cube.js"></script>
+        <script src="plane.js"></script>
+        <script src="rigidbodysim.js"></script>
+        <script src="camera-controls.js"></script>
+        <script src="scene.js"></script>
+    </body>
 </html>
