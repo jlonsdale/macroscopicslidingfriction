@@ -6,6 +6,12 @@ class Cube {
         this.mass = 1; // Mass of the cube
         this.size = size; // Size of the cube
 
+        // set this manually for now
+        const muS = 0.6; // static friction coefficient
+        const muK = 0.5; // kinetic friction coefficient
+        this.muS = muS;
+        this.muK = muK;
+
         this.mesh = null;
         const geometry = new THREE.BoxGeometry(size, size, size);
         const material = new THREE.MeshLambertMaterial({

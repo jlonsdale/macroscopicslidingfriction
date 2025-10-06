@@ -38,7 +38,6 @@ class Plane {
         this.mesh.rotation.y += (angle * Math.PI) / 180;
 
         this.mesh.position.set(1, 0, 0);
-        console.log(this.mesh);
         this.vertices = geometry.attributes.position.array;
 
         // Enable shadows
@@ -58,5 +57,14 @@ class Plane {
             0
         );
         return normal.normalize();
+    }
+
+    getAngle() {
+        return this.angle;
+    }
+
+    getPoint() {
+        // A point on the plane (we use the mesh position)
+        return this.mesh.position.clone();
     }
 }
