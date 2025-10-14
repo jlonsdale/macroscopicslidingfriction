@@ -51,6 +51,10 @@ class RigidBodySimScene {
         this.sleepLinearThreshold = 0.01; // m/s - below this, linear velocity -> 0
         this.sleepAngularThreshold = 0.05; // rad/s - below this, angular velocity -> 0
 
+        // Contact state tracking
+        this.inContact = false; // Boolean to track if cube is in contact with plane
+        this.atrest = false; // Boolean to track if cube is at rest
+
         // Start state
         this.cube.setPosition(new THREE.Vector3(0, 10, 0));
         this.cube.setVelocity(new THREE.Vector3(0, 0, 0));
@@ -115,6 +119,19 @@ class RigidBodySimScene {
         // Semi-implicit Euler: v_{t+dt} = v_t + dt * a; x_{t+dt} = x_t + dt * v_{t+dt}
         const v = cube.getVelocity().clone().addScaledVector(this.gravity, dt);
         cube.setVelocity(v);
+        /*
+            // Tangential velocity at COM with respect to the plane
+            // v_tangent = v - (n · v) n
+        */
+        const n = this.plane.getNormal().clone().normalize();
+        const v_tangent = v.clone().addScaledVector(n, -v.dot(n));
+        console.log(v_tangent);
+
+        if (v_tangent.x < 0.05 && v_tangent.z < 0.05 && this.inContact) {
+            console.log('COMING 2 REST');
+            cube.getMesh().material.color.set(0xff0000);
+            this.atrest = true;
+        }
 
         const x = cube.getPosition().clone().addScaledVector(v, dt);
 
@@ -291,34 +308,41 @@ class RigidBodySimScene {
     }
 
     step() {
+        if (this.atrest) {
+            this.cube.setVelocity(new THREE.Vector3(0, 0, 0));
+            return;
+        } // Skip simulation if cube is at rest
         const cube = this.cube;
 
-        // Debug: Log cube position and velocity every 60 frames (1 second)
-        console.log(
-            `Cube - Pos: (${cube.getPosition().x.toFixed(2)}, ${cube
-                .getPosition()
-                .y.toFixed(2)}, ${cube.getPosition().z.toFixed(2)}`
-        );
-        if (
-            Math.floor(Date.now() / 1000) % 1 === 0 &&
-            Math.floor(Date.now() / 16.67) % 60 === 0
-        ) {
-            const pos = cube.getPosition();
-            const vel = cube.getVelocity();
-            const angVel = cube.getAngularVelocity();
-            console.log(`Cube - Pos: (${pos.x.toFixed(2)}, ${pos.y.toFixed(
-                2
-            )}, ${pos.z.toFixed(2)}), 
-                         Vel: (${vel.x.toFixed(3)}, ${vel.y.toFixed(
-                3
-            )}, ${vel.z.toFixed(3)}), 
-                         AngVel: (${angVel.x.toFixed(3)}, ${angVel.y.toFixed(
-                3
-            )}, ${angVel.z.toFixed(3)})`);
-        }
+        // // Debug: Log cube position and velocity every 60 frames (1 second)
+        // console.log(
+        //     `Cube - vel: (${cube.getVelocity().x.toFixed(3)}, ${cube
+        //         .getVelocity()
+        //         .y.toFixed(3)}, ${cube.getVelocity().z.toFixed(3)})`
+        // );
+        // if (
+        //     Math.floor(Date.now() / 1000) % 1 === 0 &&
+        //     Math.floor(Date.now() / 16.67) % 60 === 0
+        // ) {
+        //     const pos = cube.getPosition();
+        //     const vel = cube.getVelocity();
+        //     const angVel = cube.getAngularVelocity();
+        //     console.log(`Cube - Pos: (${pos.x.toFixed(2)}, ${pos.y.toFixed(
+        //         2
+        //     )}, ${pos.z.toFixed(2)}),
+        //                  Vel: (${vel.x.toFixed(3)}, ${vel.y.toFixed(
+        //         3
+        //     )}, ${vel.z.toFixed(3)}),
+        //                  AngVel: (${angVel.x.toFixed(3)}, ${angVel.y.toFixed(
+        //         3
+        //     )}, ${angVel.z.toFixed(3)})`);
+        // }
 
         // 1) Broad/Narrow phase: one deepest contact (if any)
         const c = this.detectContact();
+
+        // Update contact state
+        this.inContact = c !== null;
 
         // 2) Pre-stabilize position a bit to avoid exploding when starting deep inside
         if (c && c.depth > this.penetrationSlop) {
@@ -336,6 +360,11 @@ class RigidBodySimScene {
 
         // 4) Integrate free motion (gravity, orientation)
         this._integrate(cube, this.dt);
+    }
+
+    // Getter method to check if cube is currently in contact with plane
+    isInContact() {
+        return this.inContact;
     }
 }
 

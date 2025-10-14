@@ -1,6 +1,6 @@
 // Cube class - handles cube creation and properties
 class Cube {
-    constructor(position = new THREE.Vector3(0, 0, 0), size = 2) {
+    constructor(position = new THREE.Vector3(0, 0, 0), size = 5) {
         this.velocity = new THREE.Vector3(0, 0, 0); // Initial velocity
         this.angularVelocity = new THREE.Vector3(0, 0, 0); // Initial angular velocity
         this.mass = 1; // Mass of the cube

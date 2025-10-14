@@ -9,7 +9,6 @@ class SceneRenderer {
         this.cameraControls = null;
         this.startingAngle = 15;
 
-        this.axis = new THREE.AxesHelper(50);
         this.init();
         this.addPlane();
         this.addCube();
@@ -33,12 +32,6 @@ class SceneRenderer {
             const container = document.getElementById('container');
             container.appendChild(this.renderer.domElement);
             this.addLights();
-            this.axis.position.set(
-                -window.innerWidth / 200 + 5,
-                -window.innerHeight / 200 + 5,
-                0
-            );
-            this.scene.add(this.axis);
 
             window.addEventListener(
                 'resize',
@@ -88,6 +81,7 @@ class SceneRenderer {
 
     animate() {
         requestAnimationFrame(() => this.animate());
+
         if (paused == false) {
             this.rigidBodySim.step();
         }
@@ -122,11 +116,22 @@ if (resetCameraBtn) {
         }
     });
 }
+
 const pauseBtn = document.getElementById('pauseBtn');
 if (pauseBtn) {
     pauseBtn.addEventListener('click', () => {
         paused = !paused;
         pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+    });
+}
+
+const resetSceneBtn = document.getElementById('resetSceneBtn');
+const angleSelect = document.getElementById('angleSelect');
+
+if (resetSceneBtn && angleSelect) {
+    resetSceneBtn.addEventListener('click', () => {
+        const selectedAngle = parseFloat(angleSelect.value);
+        resetScene(selectedAngle);
     });
 }
 
@@ -147,18 +152,5 @@ function resetScene(angle) {
         );
     }
 }
-
-const resetButtons = [
-    { id: 'resetFlatBtn', angle: 0 },
-    { id: 'reset15Btn', angle: 15 },
-    { id: 'reset45Btn', angle: 45 },
-];
-
-resetButtons.forEach(({ id, angle }) => {
-    const btn = document.getElementById(id);
-    if (btn) {
-        btn.addEventListener('click', () => resetScene(angle));
-    }
-});
 
 window.sceneRenderer = sceneRenderer;
