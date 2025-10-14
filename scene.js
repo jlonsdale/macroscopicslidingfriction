@@ -1,5 +1,3 @@
-let paused = false;
-
 class SceneRenderer {
     constructor() {
         this.scene = null;
@@ -13,6 +11,7 @@ class SceneRenderer {
         this.kineticFriction = 0.5;
 
         this.logging = false;
+        this.paused = false;
 
         this.init();
         this.addPlane();
@@ -114,7 +113,7 @@ class SceneRenderer {
         }
         requestAnimationFrame(() => this.animate());
 
-        if (paused == false) {
+        if (this.paused == false) {
             this.rigidBodySim.step();
         }
         this.renderer.render(this.scene, this.camera);
@@ -148,12 +147,18 @@ if (resetCameraBtn) {
         }
     });
 }
-
 const pauseBtn = document.getElementById('pauseBtn');
 if (pauseBtn) {
     pauseBtn.addEventListener('click', () => {
-        paused = !paused;
-        pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+        if (sceneRenderer) {
+            sceneRenderer.paused = !sceneRenderer.paused;
+            pauseBtn.textContent = sceneRenderer.paused
+                ? 'Pause (On)'
+                : 'Pause (Off)';
+            pauseBtn.style.backgroundColor = sceneRenderer.paused
+                ? '#4caf50'
+                : '#888';
+        }
     });
 }
 
@@ -172,9 +177,12 @@ if (toggleLoggingBtn) {
     toggleLoggingBtn.addEventListener('click', () => {
         if (sceneRenderer && sceneRenderer.rigidBodySim) {
             sceneRenderer.logging = !sceneRenderer.logging;
-            toggleLoggingBtn.textContent = this.logging
-                ? 'Disable Logging'
-                : 'Enable Logging';
+            toggleLoggingBtn.textContent = sceneRenderer.logging
+                ? 'Logging (On)'
+                : 'Logging (Off)';
+            toggleLoggingBtn.style.backgroundColor = sceneRenderer.logging
+                ? '#4caf50'
+                : '#888';
         }
     });
 }
@@ -183,6 +191,7 @@ const staticFrictionSlider = document.getElementById('staticFrictionSlider');
 const kineticFrictionSlider = document.getElementById('kineticFrictionSlider');
 const staticFrictionValue = document.getElementById('staticFrictionValue');
 const kineticFrictionValue = document.getElementById('kineticFrictionValue');
+
 if (staticFrictionSlider && staticFrictionValue) {
     staticFrictionSlider.addEventListener('input', () => {
         const value = parseFloat(staticFrictionSlider.value);
@@ -221,11 +230,6 @@ function resetScene(angle) {
             sceneRenderer.scene.remove(sceneRenderer.plane.getMesh());
         }
         sceneRenderer.addPlane();
-        console.log(
-            'hello',
-            sceneRenderer.staticFriction,
-            sceneRenderer.kineticFriction
-        );
         sceneRenderer.addCube(
             sceneRenderer.staticFriction,
             sceneRenderer.kineticFriction

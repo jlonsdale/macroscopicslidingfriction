@@ -89,19 +89,15 @@
                 color: white;
                 font-size: 14px;
                 cursor: pointer;
-                transition: background-color 0.3s;
+                transition: background-color 0.1s;
             }
 
             .control-panel button:hover {
-                background: #45a049;
+                box-shadow: 0 0 4px 1px #ffffff;
             }
 
             .control-panel button.secondary {
-                background: #2196f3;
-            }
-
-            .control-panel button.secondary:hover {
-                background: #1976d2;
+                background: #888;
             }
         </style>
     </head>
@@ -224,11 +220,11 @@
             </div>
 
             <button id="resetSceneBtn">Reset Scene</button>
-            <button id="pauseBtn" class="secondary">Pause</button>
-            <button id="resetCameraBtn" class="secondary">Reset Camera</button>
+            <button id="resetCameraBtn">Reset Camera</button>
             <button id="toggleLoggingBtn" class="secondary">
-                Enable Logging
+                Logging (Off)
             </button>
+            <button id="pauseBtn" class="secondary">Pause (Off)</button>
         </div>
 
         <div id="error" class="error" style="display: none"></div>
