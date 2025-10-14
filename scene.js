@@ -8,11 +8,15 @@ class SceneRenderer {
         this.cube = null;
         this.cameraControls = null;
         this.startingAngle = 15;
+
+        this.staticFriction = 0.6;
+        this.kineticFriction = 0.5;
+
         this.logging = false;
 
         this.init();
         this.addPlane();
-        this.addCube();
+        this.addCube(this.staticFriction, this.kineticFriction);
         this.setupCameraControls();
 
         this.rigidBodySim = new RigidBodySimScene(this.cube, this.plane);
@@ -67,8 +71,15 @@ class SceneRenderer {
         this.scene.add(planeMesh);
     }
 
-    addCube(position = new THREE.Vector3(-5, 10, 0), size = 2) {
-        const cube = new Cube(position, size);
+    addCube(staticFriction, kineticFriction) {
+        let startingPosition = new THREE.Vector3(-5, 10, 0);
+        let size = 4;
+        const cube = new Cube(
+            startingPosition,
+            size,
+            staticFriction,
+            kineticFriction
+        );
         this.cube = cube;
         const cubeMesh = cube.getMesh();
         this.scene.add(cubeMesh);
@@ -168,6 +179,38 @@ if (toggleLoggingBtn) {
     });
 }
 
+const staticFrictionSlider = document.getElementById('staticFrictionSlider');
+const kineticFrictionSlider = document.getElementById('kineticFrictionSlider');
+const staticFrictionValue = document.getElementById('staticFrictionValue');
+const kineticFrictionValue = document.getElementById('kineticFrictionValue');
+if (staticFrictionSlider && staticFrictionValue) {
+    staticFrictionSlider.addEventListener('input', () => {
+        const value = parseFloat(staticFrictionSlider.value);
+        staticFrictionValue.textContent = value.toFixed(2);
+        if (sceneRenderer) {
+            sceneRenderer.staticFriction = value;
+        }
+    });
+    // Initialize display
+    staticFrictionValue.textContent = parseFloat(
+        staticFrictionSlider.value
+    ).toFixed(2);
+}
+
+if (kineticFrictionSlider && kineticFrictionValue) {
+    kineticFrictionSlider.addEventListener('input', () => {
+        const value = parseFloat(kineticFrictionSlider.value);
+        kineticFrictionValue.textContent = value.toFixed(2);
+        if (sceneRenderer) {
+            sceneRenderer.kineticFriction = value;
+        }
+    });
+    // Initialize display
+    kineticFrictionValue.textContent = parseFloat(
+        kineticFrictionSlider.value
+    ).toFixed(2);
+}
+
 function resetScene(angle) {
     sceneRenderer.startingAngle = angle;
     if (sceneRenderer) {
@@ -178,7 +221,15 @@ function resetScene(angle) {
             sceneRenderer.scene.remove(sceneRenderer.plane.getMesh());
         }
         sceneRenderer.addPlane();
-        sceneRenderer.addCube();
+        console.log(
+            'hello',
+            sceneRenderer.staticFriction,
+            sceneRenderer.kineticFriction
+        );
+        sceneRenderer.addCube(
+            sceneRenderer.staticFriction,
+            sceneRenderer.kineticFriction
+        );
         sceneRenderer.rigidBodySim = new RigidBodySimScene(
             sceneRenderer.cube,
             sceneRenderer.plane

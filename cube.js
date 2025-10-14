@@ -1,6 +1,6 @@
 // Cube class - handles cube creation and properties
 class Cube {
-    constructor(position = new THREE.Vector3(0, 0, 0), size = 5) {
+    constructor(position, size, staticFriction, kineticFriction) {
         this.velocity = new THREE.Vector3(0, 0, 0); // Initial velocity
         this.angularVelocity = new THREE.Vector3(0, 0, 0); // Initial angular velocity
         this.mass = 1; // Mass of the cube
@@ -12,10 +12,8 @@ class Cube {
         this.inertia = new THREE.Vector3(I, I, I);
 
         // set this manually for now
-        const muS = 0.6; // static friction coefficient
-        const muK = 0.5; // kinetic friction coefficient
-        this.muS = muS;
-        this.muK = muK;
+        this.staticFriction = staticFriction; // static friction coefficient
+        this.kineticFriction = kineticFriction; // kinetic friction coefficient
 
         this.mesh = null;
         const geometry = new THREE.BoxGeometry(size, size, size);
@@ -81,5 +79,18 @@ class Cube {
 
     setInertia(inertia) {
         this.inertia.copy(inertia);
+    }
+
+    setStaticFriction(muS) {
+        this.staticFriction = muS;
+    }
+    setKineticFriction(muK) {
+        this.kineticFriction = muK;
+    }
+    getStaticFriction() {
+        return this.staticFriction;
+    }
+    getKineticFriction() {
+        return this.kineticFriction;
     }
 }

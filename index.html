@@ -66,6 +66,19 @@
                 font-size: 14px;
             }
 
+            .control-panel input[type='range'] {
+                width: 100%;
+                margin: 5px 0;
+                cursor: pointer;
+            }
+
+            .slider-value {
+                color: white;
+                font-size: 12px;
+                text-align: center;
+                margin-top: 2px;
+            }
+
             .control-panel button {
                 width: 100%;
                 padding: 10px;
@@ -112,6 +125,102 @@
                     <option value="40">40°</option>
                     <option value="45">45°</option>
                 </select>
+            </div>
+
+            <div
+                class="control-group"
+                style="margin-bottom: 10px; text-align: center"
+            >
+                <div style="position: relative; height: 30px">
+                    <svg
+                        width="100%"
+                        height="30"
+                        viewBox="0 0 200 30"
+                        style="max-width: 180px"
+                    >
+                        <defs>
+                            <linearGradient
+                                id="frictionGradient"
+                                x1="0"
+                                y1="0"
+                                x2="1"
+                                y2="0"
+                            >
+                                <stop offset="0%" stop-color="#4caf50" />
+                                <stop offset="100%" stop-color="#f44336" />
+                            </linearGradient>
+                        </defs>
+                        <polygon
+                            points="10,25 170,25 170,30 200,15 170,0 170,5 10,5"
+                            fill="url(#frictionGradient)"
+                        />
+
+                        <polygon points="180,5 200,15 180,25" fill="#f44336" />
+                    </svg>
+                    <div
+                        style="
+                            display: flex;
+                            justify-content: space-between;
+                            position: absolute;
+                            width: 100%;
+                            top: 0;
+                            left: 0;
+                            font-size: 12px;
+                            color: #fff;
+                        "
+                    >
+                        <span
+                            style="
+                                margin-left: 12px;
+                                color: #4caf50;
+                                font-weight: bold;
+                                align-self: center;
+                                line-height: 30px;
+                                font-size: 10px;
+                            "
+                            >Low Friction</span
+                        >
+                        <span
+                            style="
+                                margin-right: 18px;
+                                color: #f44336;
+                                font-weight: bold;
+                                align-self: center;
+                                line-height: 30px;
+                                font-size: 10px;
+                            "
+                            >High Friction</span
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="staticFrictionSlider">Static Friction (μₛ):</label>
+                <input
+                    type="range"
+                    id="staticFrictionSlider"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value="0.6"
+                />
+                <div class="slider-value" id="staticFrictionValue">0.60</div>
+            </div>
+
+            <div class="control-group">
+                <label for="kineticFrictionSlider"
+                    >Kinetic Friction (μₖ):</label
+                >
+                <input
+                    type="range"
+                    id="kineticFrictionSlider"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value="0.5"
+                />
+                <div class="slider-value" id="kineticFrictionValue">0.50</div>
             </div>
 
             <button id="resetSceneBtn">Reset Scene</button>

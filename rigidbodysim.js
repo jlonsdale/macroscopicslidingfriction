@@ -38,8 +38,8 @@ class RigidBodySimScene {
 
         // Material params
         this.restitution = 0.05; // 0 = inelastic, 1 = perfectly elastic
-        this.muS = 0.6; // static friction coefficient
-        this.muK = 0.5; // kinetic friction coefficient
+        this.muS = cube.getStaticFriction(); // static friction coefficient
+        this.muK = cube.getKineticFriction(); // kinetic friction coefficient
 
         // Stabilization (Baumgarte) and slop
         this.beta = 0.2; // error reduction parameter [0..1]
@@ -48,8 +48,6 @@ class RigidBodySimScene {
         // Damping and sleep parameters
         this.linearDamping = 0.01; // Linear velocity damping (air resistance)
         this.angularDamping = 0.05; // Angular velocity damping (rotational friction)
-        this.sleepLinearThreshold = 0.01; // m/s - below this, linear velocity -> 0
-        this.sleepAngularThreshold = 0.05; // rad/s - below this, angular velocity -> 0
 
         // Contact state tracking
         this.inContact = false; // Boolean to track if cube is in contact with plane
@@ -119,23 +117,12 @@ class RigidBodySimScene {
     _integrate(cube, dt) {
         // Semi-implicit Euler: v_{t+dt} = v_t + dt * a; x_{t+dt} = x_t + dt * v_{t+dt}
         const v = cube.getVelocity().clone().addScaledVector(this.gravity, dt);
+        // apply slight damping
+        v.multiplyScalar(1 - this.linearDamping);
         cube.setVelocity(v);
-        /*
-            // Tangential velocity at COM with respect to the plane
-            // v_tangent = v - (n · v) n
-        */
+
         const n = this.plane.getNormal().clone().normalize();
         const v_tangent = v.clone().addScaledVector(n, -v.dot(n));
-
-        if (
-            v_tangent.x < 0.05 &&
-            v_tangent.z < 0.05 &&
-            v_tangent.y < 0.05 &&
-            this.inContact
-        ) {
-            cube.getMesh().material.color.set(0xff0000);
-            this.atrest = true;
-        }
 
         const x = cube.getPosition().clone().addScaledVector(v, dt);
 
@@ -151,6 +138,10 @@ class RigidBodySimScene {
 
         // Orientation from angular velocity
         const w = cube.getAngularVelocity().clone();
+        // apply slight angular damping
+        w.multiplyScalar(1 - this.angularDamping);
+        cube.setAngularVelocity(w);
+
         const q = cube.getMesh().quaternion.clone();
         const halfDt = 0.5 * dt;
         const wx = w.x,
@@ -314,11 +305,6 @@ class RigidBodySimScene {
     }
 
     step() {
-        if (this.atrest) {
-            this.cube.setVelocity(new THREE.Vector3(0, 0, 0));
-            return;
-        }
-
         // Skip simulation if cube is at rest
         const cube = this.cube;
 
