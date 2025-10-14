@@ -73,10 +73,9 @@ class SceneRenderer {
         this.scene.add(planeMesh);
     }
 
-    addCube(position = new THREE.Vector3(-5, 4, 0), size = 2) {
+    addCube(position = new THREE.Vector3(-5, 10, 0), size = 2) {
         const cube = new Cube(position, size);
         this.cube = cube;
-
         const cubeMesh = cube.getMesh();
         this.scene.add(cubeMesh);
     }

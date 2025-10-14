@@ -6,6 +6,11 @@ class Cube {
         this.mass = 1; // Mass of the cube
         this.size = size; // Size of the cube
 
+        // Calculate inertia tensor for a cube: I = (1/6) * m * a^2 for each axis
+        // where m is mass and a is the edge length
+        const I = (this.mass * size * size) / 6.0;
+        this.inertia = new THREE.Vector3(I, I, I);
+
         // set this manually for now
         const muS = 0.6; // static friction coefficient
         const muK = 0.5; // kinetic friction coefficient
@@ -56,6 +61,10 @@ class Cube {
         return this.size;
     }
 
+    getInertia() {
+        return this.inertia.clone();
+    }
+
     setVelocity(velocity) {
         this.velocity.copy(velocity);
     }
@@ -68,5 +77,9 @@ class Cube {
 
     setAngularVelocity(angularVelocity) {
         this.angularVelocity.copy(angularVelocity);
+    }
+
+    setInertia(inertia) {
+        this.inertia.copy(inertia);
     }
 }

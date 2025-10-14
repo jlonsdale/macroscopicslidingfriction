@@ -2,7 +2,7 @@ class Plane {
     constructor(angle) {
         this.mesh = null;
         this.angle = angle; // degrees
-        const geometry = new THREE.PlaneGeometry(20, 10);
+        const geometry = new THREE.PlaneGeometry(50, 20);
         const size = 512;
         const squares = 32;
         const canvas = document.createElement('canvas');
