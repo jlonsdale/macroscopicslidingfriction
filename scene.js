@@ -8,6 +8,7 @@ class SceneRenderer {
         this.cube = null;
         this.cameraControls = null;
         this.startingAngle = 15;
+        this.logging = false;
 
         this.init();
         this.addPlane();
@@ -80,6 +81,26 @@ class SceneRenderer {
     }
 
     animate() {
+        if (this.logging && this.rigidBodySim.atrest == false) {
+            let position = this.cube.getPosition();
+            let vel = this.cube.getVelocity();
+            let angvel = this.cube.getAngularVelocity();
+            console.log(
+                `Position: (${position.x.toFixed(2)}, ${position.y.toFixed(
+                    2
+                )}, ${position.z.toFixed(2)})`
+            );
+            console.log(
+                `Velocity: (${vel.x.toFixed(2)}, ${vel.y.toFixed(
+                    2
+                )}, ${vel.z.toFixed(2)})`
+            );
+            console.log(
+                `Angular Velocity: (${angvel.x.toFixed(2)}, ${angvel.y.toFixed(
+                    2
+                )}, ${angvel.z.toFixed(2)})`
+            );
+        }
         requestAnimationFrame(() => this.animate());
 
         if (paused == false) {
@@ -132,6 +153,18 @@ if (resetSceneBtn && angleSelect) {
     resetSceneBtn.addEventListener('click', () => {
         const selectedAngle = parseFloat(angleSelect.value);
         resetScene(selectedAngle);
+    });
+}
+
+const toggleLoggingBtn = document.getElementById('toggleLoggingBtn');
+if (toggleLoggingBtn) {
+    toggleLoggingBtn.addEventListener('click', () => {
+        if (sceneRenderer && sceneRenderer.rigidBodySim) {
+            sceneRenderer.logging = !sceneRenderer.logging;
+            toggleLoggingBtn.textContent = this.logging
+                ? 'Disable Logging'
+                : 'Enable Logging';
+        }
     });
 }
 
