@@ -1,9 +1,9 @@
 // Cube class - handles cube creation and properties
 class Cube {
-    constructor(position, size, staticFriction, kineticFriction) {
+    constructor(position, size, staticFriction, kineticFriction, mass) {
         this.velocity = new THREE.Vector3(0, 0, 0); // Initial velocity
         this.angularVelocity = new THREE.Vector3(0, 0, 0); // Initial angular velocity
-        this.mass = 1; // Mass of the cube
+        this.mass = mass; // Mass of the cube
         this.size = size; // Size of the cube
 
         // Calculate inertia tensor for a cube: I = (1/6) * m * a^2 for each axis

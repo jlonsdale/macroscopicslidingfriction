@@ -9,6 +9,7 @@ class SceneRenderer {
 
         this.staticFriction = 0.6;
         this.kineticFriction = 0.5;
+        this.mass = 5;
 
         this.logging = false;
         this.paused = false;
@@ -77,7 +78,8 @@ class SceneRenderer {
             startingPosition,
             size,
             staticFriction,
-            kineticFriction
+            kineticFriction,
+            this.mass
         );
         this.cube = cube;
         const cubeMesh = cube.getMesh();
@@ -191,6 +193,20 @@ const staticFrictionSlider = document.getElementById('staticFrictionSlider');
 const kineticFrictionSlider = document.getElementById('kineticFrictionSlider');
 const staticFrictionValue = document.getElementById('staticFrictionValue');
 const kineticFrictionValue = document.getElementById('kineticFrictionValue');
+const massValue = document.getElementById('massValue');
+const massSlider = document.getElementById('massSlider');
+
+if (massSlider && massValue) {
+    massSlider.addEventListener('input', () => {
+        const value = parseFloat(massSlider.value);
+        massValue.textContent = value.toFixed(2);
+        if (sceneRenderer) {
+            sceneRenderer.mass = value;
+        }
+    });
+    // Initialize display
+    massValue.textContent = parseFloat(massSlider.value).toFixed(2);
+}
 
 if (staticFrictionSlider && staticFrictionValue) {
     staticFrictionSlider.addEventListener('input', () => {
@@ -232,7 +248,8 @@ function resetScene(angle) {
         sceneRenderer.addPlane();
         sceneRenderer.addCube(
             sceneRenderer.staticFriction,
-            sceneRenderer.kineticFriction
+            sceneRenderer.kineticFriction,
+            sceneRenderer.mass
         );
         sceneRenderer.rigidBodySim = new RigidBodySimScene(
             sceneRenderer.cube,
