@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Surfaces Viewer – Three.js</title>
+        <style>
+            html,
+            body {
+                height: 100%;
+                margin: 0;
+                background: #0b0d10;
+                color: #e6e6e6;
+                font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
+                    Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial;
+            }
+            #app {
+                position: fixed;
+                inset: 0;
+            }
+            .hud {
+                position: fixed;
+                left: 0.75rem;
+                bottom: 0.75rem;
+                background: rgba(20, 22, 26, 0.6);
+                padding: 0.5rem 0.6rem;
+                border-radius: 0.6rem;
+                font-size: 12px;
+                line-height: 1.4;
+            }
+            .credits {
+                position: fixed;
+                bottom: 0.5rem;
+                right: 0.75rem;
+                opacity: 0.6;
+                font-size: 12px;
+            }
+            .credits a {
+                color: #fff;
+                text-decoration: none;
+                border-bottom: 1px dotted #999;
+            }
+            .controls {
+                position: fixed;
+                top: 0.75rem;
+                right: 0.75rem;
+                width: 280px;
+                background: rgba(20, 22, 26, 0.9);
+                padding: 1rem;
+                border-radius: 0.6rem;
+                font-size: 13px;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+            .control-group {
+                margin-bottom: 1rem;
+                padding: 0.5rem 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .control-group:last-child {
+                border-bottom: none;
+            }
+            .control-group h3 {
+                margin: 0 0 0.5rem 0;
+                font-size: 14px;
+                color: #fff;
+            }
+            .control-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 0.4rem;
+            }
+            .control-row label {
+                color: #ccc;
+                font-size: 12px;
+                width: 50%;
+            }
+            .control-row input,
+            .control-row select {
+                width: 45%;
+                padding: 0.2rem 0.4rem;
+                background: rgba(100, 150, 255, 0.8);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 0.3rem;
+                color: #fff;
+                font-size: 12px;
+            }
+            .control-row button {
+                padding: 0.3rem 0.6rem;
+                background: rgba(100, 150, 255, 0.8);
+                border: none;
+                border-radius: 0.3rem;
+                color: #fff;
+                font-size: 12px;
+                cursor: pointer;
+            }
+            .control-row button:hover {
+                background: rgba(100, 150, 255, 1);
+            }
+            .tests {
+                position: fixed;
+                top: 0.75rem;
+                left: 0.75rem;
+                background: rgba(20, 22, 26, 0.7);
+                padding: 0.6rem 0.75rem;
+                border-radius: 0.6rem;
+                font-size: 12px;
+                line-height: 1.35;
+                max-width: 50ch;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            }
+            .tests b {
+                color: #fff;
+            }
+            .ok {
+                color: #8de18d;
+            }
+            .fail {
+                color: #ff8d8d;
+            }
+            canvas {
+                display: block;
+            }
+        </style>
+
+        <!-- Plotly for histograms -->
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+    </head>
+    <body>
+        <div id="app"></div>
+        <div class="hud">Surface Visualizer</div>
+        <div class="credits">Three.js • Unified Sine/Noise surfaces</div>
+        <div class="tests" id="tests"><b>Self-tests</b><br />Booting…</div>
+
+        <!-- Controls Panel -->
+        <div class="controls">
+            <div class="control-group">
+                <h3>General</h3>
+                <div class="control-row">
+                    <label>Surface Type:</label>
+                    <select id="surfaceType">
+                        <option value="Sine">Sine</option>
+                        <option value="Noisy">Noisy</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <button id="resetView">Reset View</button>
+                </div>
+            </div>
+
+            <div class="control-group" id="sineControls">
+                <h3>Sine Surface</h3>
+                <div class="control-row">
+                    <label>Amplitude:</label>
+                    <input
+                        type="range"
+                        id="sineAmplitude"
+                        min="0"
+                        max="4"
+                        step="0.1"
+                        value="1"
+                    />
+                </div>
+                <div class="control-row">
+                    <label>Wavelength X:</label>
+                    <input
+                        type="range"
+                        id="sineWavelengthX"
+                        min="4"
+                        max="80"
+                        step="0.5"
+                        value="18"
+                    />
+                </div>
+
+                <div class="control-row">
+                    <label>Roughness:</label>
+                    <input
+                        type="range"
+                        id="sineRoughness"
+                        min="0"
+                        max="2"
+                        step="0.05"
+                        value="0.3"
+                    />
+                </div>
+                <div class="control-row">
+                    <label>Roughness Scale:</label>
+                    <input
+                        type="range"
+                        id="sineRoughnessScale"
+                        min="10"
+                        max="200"
+                        step="5"
+                        value="50"
+                    />
+                </div>
+            </div>
+
+            <div class="control-group" id="noiseControls" style="display: none">
+                <h3>Noisy Surface</h3>
+                <div class="control-row">
+                    <label>Amplitude:</label>
+                    <input
+                        type="range"
+                        id="noiseAmplitude"
+                        min="0"
+                        max="10"
+                        step="0.1"
+                        value="3"
+                    />
+                </div>
+                <div class="control-row">
+                    <label>Noise Scale:</label>
+                    <input
+                        type="range"
+                        id="noiseScale"
+                        min="1"
+                        max="50"
+                        step="1"
+                        value="15"
+                    />
+                </div>
+                <div class="control-row">
+                    <label>Seed:</label>
+                    <input
+                        type="range"
+                        id="noiseSeed"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value="42"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <!-- Histogram container -->
+        <div
+            id="histogram-container"
+            style="
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                width: 500px;
+                height: 400px;
+                background: rgba(0, 0, 0, 0.8);
+                border-radius: 8px;
+                padding: 10px;
+                display: block;
+                z-index: 1000;
+            "
+        >
+            <div id="ndf-histogram" style="width: 100%; height: 100%"></div>
+        </div>
+
+        <!-- Import external JavaScript -->
+        <script src="./../surface_visualizer.js"></script>
+        <script>// Initialize the application
+            const surfaceVisualizer = new SurfaceVisualizer(true);
+
+            // Ensure DOM is loaded before setting up controls
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    surfaceVisualizer.setupControls();
+                });
+            } else {
+                // DOM already loaded, setup controls immediately
+                setTimeout(() => surfaceVisualizer.setupControls(), 0);
+            }
+</script>
+</html>

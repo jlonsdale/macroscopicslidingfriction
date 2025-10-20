@@ -93,26 +93,6 @@ class SceneRenderer {
     }
 
     animate() {
-        if (this.logging && this.rigidBodySim.atrest == false) {
-            let position = this.cube.getPosition();
-            let vel = this.cube.getVelocity();
-            let angvel = this.cube.getAngularVelocity();
-            console.log(
-                `Position: (${position.x.toFixed(2)}, ${position.y.toFixed(
-                    2
-                )}, ${position.z.toFixed(2)})`
-            );
-            console.log(
-                `Velocity: (${vel.x.toFixed(2)}, ${vel.y.toFixed(
-                    2
-                )}, ${vel.z.toFixed(2)})`
-            );
-            console.log(
-                `Angular Velocity: (${angvel.x.toFixed(2)}, ${angvel.y.toFixed(
-                    2
-                )}, ${angvel.z.toFixed(2)})`
-            );
-        }
         requestAnimationFrame(() => this.animate());
 
         if (this.paused == false) {
@@ -131,7 +111,6 @@ class SceneRenderer {
         const errorDiv = document.getElementById('error');
         errorDiv.textContent = message;
         errorDiv.style.display = 'block';
-        console.error(message);
     }
 }
 
@@ -186,6 +165,37 @@ if (toggleLoggingBtn) {
                 ? '#4caf50'
                 : '#888';
         }
+    });
+}
+
+const openSurfaceVisualizerBtn = document.getElementById(
+    'openSurfaceVisualizerBtn'
+);
+if (openSurfaceVisualizerBtn) {
+    openSurfaceVisualizerBtn.addEventListener('click', () => {
+        const panel =
+            document.getElementById('surfaceVisualizerContainer') ||
+            openSurfaceVisualizerBtn.closest('.panel') ||
+            document.getElementById('container');
+
+        if (panel) {
+            panel.classList.toggle('expanded');
+
+            if (panel.classList.contains('expanded')) {
+                // expand smoothly using max-height
+                panel.style.maxHeight = panel.scrollHeight + 'px';
+                openSurfaceVisualizerBtn.textContent =
+                    'Close Surface Visualizer';
+                openSurfaceVisualizerBtn.style.backgroundColor = '#4caf50';
+            } else {
+                // collapse
+                panel.style.maxHeight = '0';
+                openSurfaceVisualizerBtn.textContent =
+                    'Open Surface Visualizer';
+                openSurfaceVisualizerBtn.style.backgroundColor = '#888';
+            }
+        }
+        const surfaceVisualizer = new SurfaceVisualizer(false); // true = full render mode
     });
 }
 

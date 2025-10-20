@@ -135,8 +135,6 @@ class RigidBodySimScene {
 
         const x = cube.getPosition().clone().addScaledVector(v, dt);
         if (!isFinite(x.x) || !isFinite(x.y) || !isFinite(x.z)) {
-            if (this.loggingEnabled)
-                console.error('Invalid position detected:', x);
             x.set(0, 2, 0);
         }
         cube.setPosition(x);

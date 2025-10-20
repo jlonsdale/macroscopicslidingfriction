@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Sine Surface – Three.js</title>
+        <style>
+            html,
+            body {
+                height: 100%;
+                margin: 0;
+                background: #0b0d10;
+                color: #e6e6e6;
+                font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
+                    Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial;
+            }
+            #app {
+                position: fixed;
+                inset: 0;
+            }
+            .hud {
+                position: fixed;
+                left: 0.75rem;
+                bottom: 0.75rem;
+                background: rgba(20, 22, 26, 0.6);
+                padding: 0.5rem 0.6rem;
+                border-radius: 0.6rem;
+                font-size: 12px;
+                line-height: 1.4;
+            }
+            .credits {
+                position: fixed;
+                bottom: 0.5rem;
+                right: 0.75rem;
+                opacity: 0.6;
+                font-size: 12px;
+            }
+            .credits a {
+                color: #fff;
+                text-decoration: none;
+                border-bottom: 1px dotted #999;
+            }
+            .tests {
+                position: fixed;
+                top: 0.75rem;
+                left: 0.75rem;
+                background: rgba(20, 22, 26, 0.7);
+                padding: 0.6rem 0.75rem;
+                border-radius: 0.6rem;
+                font-size: 12px;
+                line-height: 1.35;
+                max-width: 50ch;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            }
+            .tests b {
+                color: #fff;
+            }
+            .ok {
+                color: #8de18d;
+            }
+            .fail {
+                color: #ff8d8d;
+            }
+            canvas {
+                display: block;
+            }
+        </style>
+
+        <!-- Plotly for histograms -->
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js",
+                    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/",
+                    "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm"
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <div id="app"></div>
+        <div class="hud">Drag to orbit • Scroll to zoom</div>
+        <div class="credits">Three.js • Sine wave surface</div>
+        <div class="tests" id="tests"><b>Self-tests</b><br />Booting…</div>
+
+        <!-- Histogram containers -->
+        <div
+            id="histogram-container"
+            style="
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                width: 500px;
+                height: 400px;
+                background: rgba(0, 0, 0, 0.8);
+                border-radius: 8px;
+                padding: 10px;
+                display: none;
+                z-index: 1000;
+            "
+        >
+            <div id="ndf-histogram" style="width: 100%; height: 100%"></div>
+        </div>
+
+        <script type="module">
+            import * as THREE from 'three';
+            import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+            import GUI from 'lil-gui';
+
+            const testsEl = document.getElementById('tests');
+            const ok = name => `<span class="ok">✔</span> ${name}`;
+            const fail = (name, msg = '') =>
+                `<span class="fail">✖</span> ${name}${msg ? ': ' + msg : ''}`;
+            function report(lines) {
+                if (testsEl)
+                    testsEl.innerHTML =
+                        '<b>Self-tests</b><br/>' + lines.join('<br/>');
+            }
+
+            const app = document.getElementById('app');
+            const renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                powerPreference: 'high-performance',
+            });
+            renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+            renderer.setSize(innerWidth, innerHeight);
+            app.appendChild(renderer.domElement);
+
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0b0d10);
+
+            const camera = new THREE.PerspectiveCamera(
+                55,
+                innerWidth / innerHeight,
+                0.1,
+                5000
+            );
+            camera.position.set(60, 30, 60);
+
+            const controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+
+            const hemi = new THREE.HemisphereLight(0xffffff, 0x333333, 0.9);
+            scene.add(hemi);
+            const dir = new THREE.DirectionalLight(0xffffff, 1.0);
+            dir.position.set(20, 40, 10);
+            scene.add(dir);
+
+            const params = {
+                L: 120,
+                resolution: 256,
+                amplitude: 2.0,
+                wavelengthX: 18.0,
+                phaseX: 0.0,
+                roughness: 0.3,
+                roughnessScale: 50.0,
+                animateWaves: false,
+                speed: 0.6,
+                colorize: true,
+                wireframe: false,
+                autoRotate: true,
+                resetView: () => {
+                    camera.position.set(60, 30, 60);
+                    controls.target.set(0, 0, 0);
+                    controls.update();
+                },
+            };
+
+            let geo = new THREE.PlaneGeometry(
+                params.L,
+                params.L,
+                params.resolution,
+                params.resolution
+            );
+            geo.rotateX(-Math.PI / 2);
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.0,
+                roughness: 0.95,
+                side: THREE.DoubleSide,
+                wireframe: params.wireframe,
+                vertexColors: true,
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            scene.add(mesh);
+
+            const grid = new THREE.GridHelper(600, 120, 0x555555, 0x2a2a2a);
+            grid.position.y = -params.amplitude - 0.01;
+            scene.add(grid);
+
+            let pos = geo.attributes.position;
+            let N = pos.count;
+            const xs = new Float32Array(N);
+            for (let i = 0; i < N; i++) {
+                xs[i] = pos.getX(i);
+            }
+            const colors = new Float32Array(N * 3);
+
+            function applyHeights(phaseX = params.phaseX) {
+                let minH = Infinity,
+                    maxH = -Infinity;
+                const { amplitude, wavelengthX, roughness, roughnessScale } =
+                    params;
+                const kx = (2 * Math.PI) / Math.max(1e-6, wavelengthX);
+
+                for (let i = 0; i < N; i++) {
+                    const x = xs[i];
+                    const z = pos.getZ(i);
+
+                    // Primary sine wave
+                    let y = amplitude * Math.sin(kx * x + phaseX);
+
+                    // Add roughness using multiple frequency components
+                    if (roughness > 0) {
+                        // High frequency noise
+                        const noiseFreq1 = roughnessScale * 0.5;
+                        const noiseFreq2 = roughnessScale * 1.2;
+                        const noiseFreq3 = roughnessScale * 2.8;
+
+                        const noise1 = Math.sin(
+                            noiseFreq1 * x + noiseFreq1 * z * 0.3
+                        );
+                        const noise2 = Math.sin(
+                            noiseFreq2 * x * 0.7 + noiseFreq2 * z
+                        );
+                        const noise3 = Math.sin(
+                            noiseFreq3 * x * 0.4 + noiseFreq3 * z * 0.6
+                        );
+
+                        // Combine noise with decreasing amplitude
+                        const roughnessValue =
+                            roughness *
+                            (0.5 * noise1 + 0.3 * noise2 + 0.2 * noise3);
+
+                        y += roughnessValue;
+                    }
+
+                    pos.setY(i, y);
+                    if (y < minH) minH = y;
+                    if (y > maxH) maxH = y;
+                }
+                for (let i = 0; i < N; i++) {
+                    const y = pos.getY(i);
+                    const t = (y - minH) / (maxH - minH + 1e-9);
+                    const c = new THREE.Color();
+                    c.setHSL(0.66 * (1.0 - t), 0.55, 0.35 + 0.5 * t);
+                    const j = 3 * i;
+                    colors[j] = c.r;
+                    colors[j + 1] = c.g;
+                    colors[j + 2] = c.b;
+                }
+                geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                pos.needsUpdate = true;
+                geo.computeVertexNormals();
+                geo.normalsNeedUpdate = true;
+                runTests();
+            }
+
+            applyHeights();
+
+            const gui = new GUI({ title: 'Sine Surface' });
+            gui.add(params, 'amplitude', 0.0, 8.0, 0.05)
+                .name('Amplitude A')
+                .onChange(() => applyHeights());
+            gui.add(params, 'wavelengthX', 4.0, 80.0, 0.5)
+                .name('Wavelength X (λx)')
+                .onChange(() => applyHeights());
+            gui.add(params, 'phaseX', 0.0, Math.PI * 2, 0.01)
+                .name('Phase X')
+                .onChange(() => applyHeights());
+            gui.add(params, 'roughness', 0.0, 2.0, 0.05)
+                .name('Roughness')
+                .onChange(() => applyHeights());
+            gui.add(params, 'roughnessScale', 10.0, 200.0, 5.0)
+                .name('Roughness Scale')
+                .onChange(() => applyHeights());
+            gui.add(params, 'resolution', 16, 1024, 16)
+                .name('Resolution')
+                .onChange(() => {
+                    scene.remove(mesh);
+                    geo.dispose();
+                    geo = new THREE.PlaneGeometry(
+                        params.L,
+                        params.L,
+                        params.resolution,
+                        params.resolution
+                    );
+                    geo.rotateX(-Math.PI / 2);
+                    mesh.geometry = geo;
+                    pos = geo.attributes.position;
+                    N = pos.count;
+                    for (let i = 0; i < N; i++) {
+                        xs[i] = pos.getX(i);
+                    }
+                    applyHeights();
+                    scene.add(mesh);
+                });
+            gui.add(params, 'animateWaves').name('Animate');
+            gui.add(params, 'speed', 0.0, 3.0, 0.01).name('Speed (Hz)');
+            gui.add(params, 'wireframe').onChange(v => {
+                mat.wireframe = v;
+            });
+            gui.add(params, 'colorize')
+                .name('Colorize')
+                .onChange(() => applyHeights());
+            gui.add(params, 'resetView').name('Reset view');
+            gui.add({ printFaceNormals }, 'printFaceNormals').name(
+                'Print Face Normals'
+            );
+            gui.add({ areaWeightedNDF }, 'areaWeightedNDF').name('Compute NDF');
+            gui.add({ createNDFHistogram }, 'createNDFHistogram').name(
+                'Show NDF Histogram'
+            );
+            gui.add({ hideHistogram }, 'hideHistogram').name('Hide Histogram');
+
+            let t = 0;
+            let frameCounter = 0;
+            function animate() {
+                requestAnimationFrame(animate);
+                if (params.autoRotate) {
+                    mesh.rotation.y += 0.002;
+                }
+                if (params.animateWaves) {
+                    t += 0.016;
+                    if (frameCounter++ % 2 === 0) {
+                        const phi = t * Math.PI * 2 * params.speed;
+                        applyHeights(params.phaseX + phi);
+                    }
+                }
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            addEventListener('resize', () => {
+                camera.aspect = innerWidth / innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(innerWidth, innerHeight);
+            });
+
+            // NDF (Normal Distribution Function) Implementation
+            function normalsToNdfXY(normals) {
+                // normals: array of THREE.Vector3, assumed normalized
+                // z is the macroscopic normal direction
+                const ndfSamples = [];
+
+                for (const normal of normals) {
+                    const x = normal.x;
+                    const y = normal.y;
+                    const z = Math.max(-1, Math.min(1, normal.z)); // clip z to [-1, 1]
+
+                    const theta = Math.acos(z); // theta: angle from z-axis
+                    const phi = Math.atan2(y, x); // phi: angle in x-y plane
+
+                    const ndfX = Math.cos(phi) * Math.sin(theta);
+                    const ndfY = Math.sin(phi) * Math.sin(theta);
+
+                    ndfSamples.push({ x: ndfX, y: ndfY });
+                }
+
+                return ndfSamples;
+            }
+
+            function areaWeightedNDF() {
+                console.log('=== COMPUTING AREA-WEIGHTED NDF ===');
+
+                const position = geo.attributes.position;
+                const index = geo.index;
+
+                if (!index) {
+                    console.log('No index buffer found - cannot compute NDF');
+                    return { ndfSamples: [], areaWeights: [] };
+                }
+
+                const indexArray = index.array;
+                const ndfSamples = [];
+                const areaWeights = [];
+                const normals = [];
+
+                for (let i = 0; i < indexArray.length; i += 3) {
+                    const a = indexArray[i];
+                    const b = indexArray[i + 1];
+                    const c = indexArray[i + 2];
+
+                    // Get vertices (v0, v1, v2)
+                    const v0 = new THREE.Vector3(
+                        position.getX(a),
+                        position.getY(a),
+                        position.getZ(a)
+                    );
+                    const v1 = new THREE.Vector3(
+                        position.getX(b),
+                        position.getY(b),
+                        position.getZ(b)
+                    );
+                    const v2 = new THREE.Vector3(
+                        position.getX(c),
+                        position.getY(c),
+                        position.getZ(c)
+                    );
+
+                    // Compute face normal: cross product of (v1-v0) and (v2-v0)
+                    const edge1 = new THREE.Vector3().subVectors(v1, v0);
+                    const edge2 = new THREE.Vector3().subVectors(v2, v0);
+                    const crossProduct = new THREE.Vector3().crossVectors(
+                        edge1,
+                        edge2
+                    );
+
+                    const area = crossProduct.length() / 2;
+                    if (area === 0) {
+                        continue; // skip degenerate triangles
+                    }
+
+                    const normal = crossProduct.normalize();
+                    normals.push(normal);
+                    areaWeights.push(area);
+                }
+
+                // Convert normals to NDF XY coordinates
+                const ndfXY = normalsToNdfXY(normals);
+
+                console.log(`Total valid faces: ${normals.length}`);
+                console.log(
+                    `Total surface area: ${areaWeights
+                        .reduce((sum, area) => sum + area, 0)
+                        .toFixed(6)}`
+                );
+
+                // Print first few samples
+                console.log('First 10 NDF samples:');
+                for (let i = 0; i < Math.min(10, ndfXY.length); i++) {
+                    console.log(
+                        `Face ${i}: NDF(${ndfXY[i].x.toFixed(6)}, ${ndfXY[
+                            i
+                        ].y.toFixed(6)}) | Area: ${areaWeights[i].toFixed(6)}`
+                    );
+                }
+
+                console.log('=== NDF COMPUTATION COMPLETE ===');
+
+                return {
+                    ndfSamples: ndfXY,
+                    areaWeights: areaWeights,
+                    normals: normals,
+                };
+            }
+
+            function createNDFHistogram() {
+                console.log('=== CREATING NDF HISTOGRAM ===');
+
+                // Get NDF data
+                const ndfData = areaWeightedNDF();
+                const { ndfSamples, areaWeights } = ndfData;
+
+                if (ndfSamples.length === 0) {
+                    console.log('No NDF data available');
+                    return;
+                }
+
+                // Extract NDF X and Y values
+                const ndfX = ndfSamples.map(sample => sample.x);
+                const ndfY = ndfSamples.map(sample => sample.y);
+
+                // Show histogram container
+                const container = document.getElementById(
+                    'histogram-container'
+                );
+                container.style.display = 'block';
+
+                // Create 2D histogram with density normalization (matching Python style)
+                const trace = {
+                    x: ndfX,
+                    y: ndfY,
+                    z: areaWeights, // Use area weights for color intensity
+                    type: 'histogram2d',
+                    colorscale: 'magma', // Changed to magma colormap like Python
+                    showscale: true,
+                    colorbar: {
+                        title: {
+                            text: 'Density',
+                            font: { color: 'white' },
+                        },
+                        tickfont: { color: 'white' },
+                        outlinecolor: 'white',
+                    },
+                    nbinsx: 100, // Changed to 10 bins like Python
+                    nbinsy: 100, // Changed to 10 bins like Python
+                    histfunc: 'sum', // Sum the area weights in each bin
+                    histnorm: 'probability density', // Normalize to probability density
+                };
+
+                const layout = {
+                    title: {
+                        text: '2D NDF Density Histogram',
+                        font: { color: 'white', size: 14 },
+                    },
+                    xaxis: {
+                        title: 'NDF X',
+                        color: 'white',
+                        gridcolor: '#444',
+                        zeroline: true,
+                        zerolinecolor: 'white',
+                        zerolinewidth: 1,
+                    },
+                    yaxis: {
+                        title: 'NDF Y',
+                        color: 'white',
+                        gridcolor: '#444',
+                        zeroline: true,
+                        zerolinecolor: 'white',
+                        zerolinewidth: 1,
+                    },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0.8)',
+                    font: { color: 'white' },
+                    margin: { l: 60, r: 80, t: 50, b: 60 },
+                };
+
+                const config = {
+                    displayModeBar: true,
+                    displaylogo: false,
+                    modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d'],
+                };
+
+                Plotly.newPlot('ndf-histogram', [trace], layout, config);
+
+                console.log('=== 2D DENSITY HISTOGRAM CREATED ===');
+                console.log(
+                    `NDF X range: [${Math.min(...ndfX).toFixed(3)}, ${Math.max(
+                        ...ndfX
+                    ).toFixed(3)}]`
+                );
+                console.log(
+                    `NDF Y range: [${Math.min(...ndfY).toFixed(3)}, ${Math.max(
+                        ...ndfY
+                    ).toFixed(3)}]`
+                );
+                console.log(`Total samples: ${ndfSamples.length}`);
+                console.log(
+                    `Total area: ${areaWeights
+                        .reduce((sum, area) => sum + area, 0)
+                        .toFixed(6)}`
+                );
+            }
+
+            function hideHistogram() {
+                const container = document.getElementById(
+                    'histogram-container'
+                );
+                container.style.display = 'none';
+            }
+
+            function printFaceNormals() {
+                console.log('=== PRINTING FACE NORMALS AND AREAS ===');
+
+                const position = geo.attributes.position;
+                const index = geo.index;
+
+                if (!index) {
+                    console.log(
+                        'No index buffer found - cannot calculate face normals and areas'
+                    );
+                    return;
+                }
+
+                const indexArray = index.array;
+                const faceCount = indexArray.length / 3;
+                let totalSurfaceArea = 0;
+
+                console.log(`Total faces: ${faceCount}`);
+
+                for (let i = 0; i < indexArray.length; i += 3) {
+                    const a = indexArray[i];
+                    const b = indexArray[i + 1];
+                    const c = indexArray[i + 2];
+
+                    // Get vertices
+                    const v1 = new THREE.Vector3(
+                        position.getX(a),
+                        position.getY(a),
+                        position.getZ(a)
+                    );
+                    const v2 = new THREE.Vector3(
+                        position.getX(b),
+                        position.getY(b),
+                        position.getZ(b)
+                    );
+                    const v3 = new THREE.Vector3(
+                        position.getX(c),
+                        position.getY(c),
+                        position.getZ(c)
+                    );
+
+                    // Calculate face normal using cross product
+                    const edge1 = new THREE.Vector3().subVectors(v2, v1);
+                    const edge2 = new THREE.Vector3().subVectors(v3, v1);
+                    const crossProduct = new THREE.Vector3().crossVectors(
+                        edge1,
+                        edge2
+                    );
+
+                    // Calculate face area (half the magnitude of cross product)
+                    const faceArea = crossProduct.length() * 0.5;
+
+                    // Normalize for the normal vector
+                    const normal = crossProduct.normalize();
+
+                    // Accumulate total surface area
+                    totalSurfaceArea += faceArea;
+
+                    const faceIndex = Math.floor(i / 3);
+                    console.log(
+                        `Face ${faceIndex}: Normal (${normal.x.toFixed(
+                            6
+                        )}, ${normal.y.toFixed(6)}, ${normal.z.toFixed(
+                            6
+                        )}) | Area: ${faceArea.toFixed(6)}`
+                    );
+                }
+
+                console.log(`=== SUMMARY ===`);
+                console.log(`Total faces: ${faceCount}`);
+                console.log(
+                    `Total surface area: ${totalSurfaceArea.toFixed(6)}`
+                );
+                console.log(
+                    `Average face area: ${(
+                        totalSurfaceArea / faceCount
+                    ).toFixed(6)}`
+                );
+                console.log(`=== FACE NORMALS AND AREAS PRINTED ===`);
+            }
+
+            function runTests() {
+                const lines = [];
+                try {
+                    lines.push(ok(`Vertices: ${(params.resolution + 1) ** 2}`));
+                } catch (e) {
+                    lines.push(fail('Tests errored', e.message || e));
+                }
+                report(lines);
+            }
+
+            window.THREE = THREE;
+            window.scene = scene;
+            window.mesh = mesh;
+            window.params = params;
+            window.printFaceNormals = printFaceNormals;
+            window.areaWeightedNDF = areaWeightedNDF;
+            window.normalsToNdfXY = normalsToNdfXY;
+            window.createNDFHistogram = createNDFHistogram;
+            window.hideHistogram = hideHistogram;
+        </script>
+    </body>
+</html>
