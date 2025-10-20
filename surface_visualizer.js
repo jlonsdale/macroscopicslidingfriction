@@ -1,3 +1,6 @@
+// SurfaceVisualizer.js
+// Assumes THREE and Plotly are available as globals
+
 class SurfaceVisualizer {
     constructor(render = true) {
         this.renderMode = render;
@@ -94,6 +97,11 @@ class SurfaceVisualizer {
                 noiseScale: 15.0,
                 seed: 42,
             },
+            ndf: {
+                keepHemisphereOnly: true, // filter to +Y (up) hemisphere
+                drawUnitCircle: true, // overlay unit circle for sanity
+                bins: 100, // histogram bins per axis
+            },
         };
     }
 
@@ -112,61 +120,70 @@ class SurfaceVisualizer {
         surfaceTypeSelect.addEventListener('change', e => {
             this.params.surfaceType = e.target.value;
             if (this.params.surfaceType === 'Sine') {
-                sineControls.style.display = 'block';
-                noiseControls.style.display = 'none';
+                if (sineControls) sineControls.style.display = 'block';
+                if (noiseControls) noiseControls.style.display = 'none';
             } else {
-                sineControls.style.display = 'none';
-                noiseControls.style.display = 'block';
+                if (sineControls) sineControls.style.display = 'none';
+                if (noiseControls) noiseControls.style.display = 'block';
             }
             this.repaint();
         });
 
         // Sine controls
-        document
-            .getElementById('sineAmplitude')
-            .addEventListener('input', e => {
+        const sineAmplitude = document.getElementById('sineAmplitude');
+        const sineWavelengthX = document.getElementById('sineWavelengthX');
+        const sineRoughness = document.getElementById('sineRoughness');
+        const sineRoughnessScale =
+            document.getElementById('sineRoughnessScale');
+
+        if (sineAmplitude) {
+            sineAmplitude.addEventListener('input', e => {
                 this.params.sine.amplitude = parseFloat(e.target.value);
                 this.updateSineAndHistogram();
             });
-
-        document
-            .getElementById('sineWavelengthX')
-            .addEventListener('input', e => {
+        }
+        if (sineWavelengthX) {
+            sineWavelengthX.addEventListener('input', e => {
                 this.params.sine.wavelengthX = parseFloat(e.target.value);
                 this.updateSineAndHistogram();
             });
-
-        document
-            .getElementById('sineRoughness')
-            .addEventListener('input', e => {
+        }
+        if (sineRoughness) {
+            sineRoughness.addEventListener('input', e => {
                 this.params.sine.roughness = parseFloat(e.target.value);
                 this.updateSineAndHistogram();
             });
-
-        document
-            .getElementById('sineRoughnessScale')
-            .addEventListener('input', e => {
+        }
+        if (sineRoughnessScale) {
+            sineRoughnessScale.addEventListener('input', e => {
                 this.params.sine.roughnessScale = parseFloat(e.target.value);
                 this.updateSineAndHistogram();
             });
+        }
 
         // Noise controls
-        document
-            .getElementById('noiseAmplitude')
-            .addEventListener('input', e => {
+        const noiseAmplitude = document.getElementById('noiseAmplitude');
+        const noiseScale = document.getElementById('noiseScale');
+        const noiseSeed = document.getElementById('noiseSeed');
+
+        if (noiseAmplitude) {
+            noiseAmplitude.addEventListener('input', e => {
                 this.params.noise.amplitude = parseFloat(e.target.value);
                 this.updateNoiseAndHistogram();
             });
-
-        document.getElementById('noiseScale').addEventListener('input', e => {
-            this.params.noise.noiseScale = parseFloat(e.target.value);
-            this.updateNoiseAndHistogram();
-        });
-
-        document.getElementById('noiseSeed').addEventListener('input', e => {
-            this.params.noise.seed = parseInt(e.target.value);
-            this.updateNoiseAndHistogram();
-        });
+        }
+        if (noiseScale) {
+            noiseScale.addEventListener('input', e => {
+                this.params.noise.noiseScale = parseFloat(e.target.value);
+                this.updateNoiseAndHistogram();
+            });
+        }
+        if (noiseSeed) {
+            noiseSeed.addEventListener('input', e => {
+                this.params.noise.seed = parseInt(e.target.value);
+                this.updateNoiseAndHistogram();
+            });
+        }
     }
 
     // ——— Geometry & materials
@@ -177,6 +194,7 @@ class SurfaceVisualizer {
             this.params.resolution,
             this.params.resolution
         );
+        // Make plane lie on XZ, with normal +Y
         this.geo.rotateX(-Math.PI / 2);
 
         this.mat = new THREE.MeshStandardMaterial({
@@ -226,7 +244,7 @@ class SurfaceVisualizer {
         return c;
     }
 
-    // ——— Sine surface (from original)
+    // ——— Sine surface
     applySineHeights(phaseX = this.params.sine.phaseX) {
         let minH = Infinity,
             maxH = -Infinity;
@@ -276,7 +294,7 @@ class SurfaceVisualizer {
         this.geo.normalsNeedUpdate = true;
     }
 
-    // ——— Noisy surface (from original)
+    // ——— Noisy surface
     noise2D(x, z, seed = 0) {
         const n =
             Math.sin(x * 12.9898 + z * 78.233 + seed * 37.719) * 43758.5453;
@@ -291,7 +309,7 @@ class SurfaceVisualizer {
         let minH = Infinity,
             maxH = -Infinity;
         const { amplitude, noiseScale, seed } = this.params.noise;
-        const scaleFactor = 0.01 / noiseScale;
+        const scaleFactor = 0.01 / Math.max(1e-6, noiseScale);
         const currentSeed = seed + timeOffset * 1000;
 
         for (let i = 0; i < this.N; i++) {
@@ -360,6 +378,11 @@ class SurfaceVisualizer {
             if (this.params.render) {
                 this.renderer.render(this.scene, this.camera);
             }
+            // Keep Plotly responsive too
+            const plotEl = document.getElementById('ndf-histogram');
+            if (plotEl && plotEl.data) {
+                Plotly.Plots.resize(plotEl);
+            }
         });
     }
 
@@ -369,31 +392,30 @@ class SurfaceVisualizer {
         }
     }
 
-    // ——— NDF implementation (shared)
+    // ——— NDF implementation (Y-up)
+    // Map each (unit) normal to the tangent plane axes (X,Z). Optionally keep only +Y hemisphere.
     normalsToNdfXY(normals) {
         const ndfSamples = [];
-        for (const normal of normals) {
-            const x = normal.x;
-            const y = normal.y;
-            const z = Math.max(-1, Math.min(1, normal.z));
-            const theta = Math.acos(z);
-            const phi = Math.atan2(y, x);
-            const ndfX = Math.cos(phi) * Math.sin(theta);
-            const ndfY = Math.sin(phi) * Math.sin(theta);
-            ndfSamples.push({ x: ndfX, y: ndfY });
+        for (const n of normals) {
+            if (this.params.ndf.keepHemisphereOnly && n.y < 0) continue;
+            // With Y-up, spherical mapping gives (sinθ cosφ, sinθ sinφ) == (nx, nz)
+            ndfSamples.push({ x: n.x, y: n.z });
         }
         return ndfSamples;
     }
 
+    // Build area-weighted face normals → NDF samples + weights (kept in sync with filtering)
     areaWeightedNDF() {
         const position = this.geo.attributes.position;
         const index = this.geo.index;
         if (!index) {
-            return { ndfSamples: [], areaWeights: [] };
+            return { ndfSamples: [], areaWeights: [], normals: [] };
         }
+
         const indexArray = index.array;
         const areaWeights = [];
         const normals = [];
+
         for (let i = 0; i < indexArray.length; i += 3) {
             const a = indexArray[i],
                 b = indexArray[i + 1],
@@ -413,34 +435,57 @@ class SurfaceVisualizer {
                 position.getY(c),
                 position.getZ(c)
             );
+
             const e1 = new THREE.Vector3().subVectors(v1, v0);
             const e2 = new THREE.Vector3().subVectors(v2, v0);
             const cross = new THREE.Vector3().crossVectors(e1, e2);
-            const area = cross.length() / 2;
+            const area = cross.length() * 0.5;
             if (area === 0) continue;
-            const normal = cross.normalize();
-            normals.push(normal);
+
+            const n = cross.normalize(); // face normal (winding may flip it)
+            // Hemisphere filter happens in normalsToNdfXY; but we must keep weights aligned.
+            // We'll push now and filter both lists together below.
+            normals.push(n);
             areaWeights.push(area);
         }
-        const ndfXY = this.normalsToNdfXY(normals);
-        return { ndfSamples: ndfXY, areaWeights, normals };
+
+        // Produce NDF samples with optional hemisphere filtering
+        const ndfSamples = [];
+        const filteredWeights = [];
+        const filteredNormals = [];
+
+        for (let i = 0; i < normals.length; i++) {
+            const n = normals[i];
+            // Respect hemisphere filter setting
+            if (this.params.ndf.keepHemisphereOnly && n.y < 0) continue;
+            // map to (nx, nz)
+            ndfSamples.push({ x: n.x, y: n.z });
+            filteredWeights.push(areaWeights[i]);
+            filteredNormals.push(n);
+        }
+
+        return {
+            ndfSamples,
+            areaWeights: filteredWeights,
+            normals: filteredNormals,
+        };
     }
 
     createNDFHistogram() {
         const { ndfSamples, areaWeights } = this.areaWeightedNDF();
         if (!ndfSamples.length) return;
+
         const ndfX = ndfSamples.map(s => s.x);
         const ndfY = ndfSamples.map(s => s.y);
 
         // Try to find histogram container, make it visible if found
         const container = document.getElementById('histogram-container');
-        if (container) {
-            container.style.display = 'block';
-        }
+        if (container) container.style.display = 'block';
+
         const trace = {
             x: ndfX,
             y: ndfY,
-            z: areaWeights,
+            z: areaWeights, // same length as samples
             type: 'histogram2d',
             colorscale: 'magma',
             showscale: true,
@@ -451,14 +496,15 @@ class SurfaceVisualizer {
                 thickness: 10,
                 len: 0.7,
             },
-            nbinsx: 100,
-            nbinsy: 100,
-            histfunc: 'sum',
-            histnorm: 'probability density',
+            nbinsx: this.params.ndf.bins,
+            nbinsy: this.params.ndf.bins,
+            histfunc: 'sum', // sum area per bin
+            histnorm: 'probability density', // normalized density
         };
+
         const layout = {
             title: {
-                text: '2D NDF Density Histogram',
+                text: '2D NDF Density (X/Z plane)',
                 font: { color: 'white', size: 12 },
             },
             xaxis: {
@@ -469,15 +515,19 @@ class SurfaceVisualizer {
                 zeroline: true,
                 zerolinecolor: 'white',
                 zerolinewidth: 1,
+                range: [-1, 1],
             },
             yaxis: {
-                title: { text: 'NDF Y', font: { size: 10 } },
+                title: { text: 'NDF Y (Z)', font: { size: 10 } },
                 titlefont: { color: 'white', size: 10 },
                 tickfont: { color: 'white', size: 9 },
                 gridcolor: '#444',
                 zeroline: true,
                 zerolinecolor: 'white',
                 zerolinewidth: 1,
+                range: [-1, 1],
+                scaleanchor: 'x', // lock aspect so the circle isn't squashed
+                scaleratio: 1,
             },
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0.8)',
@@ -485,6 +535,7 @@ class SurfaceVisualizer {
             margin: { l: 40, r: 60, t: 30, b: 40 },
             autosize: true,
         };
+
         const config = {
             displayModeBar: false, // Hide the toolbar to save space
             displaylogo: false,
@@ -492,25 +543,30 @@ class SurfaceVisualizer {
             modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d'],
         };
 
-        // Use responsive plotting
-        Plotly.newPlot('ndf-histogram', [trace], layout, config).then(() => {
-            // Force a resize to ensure proper fitting
-            Plotly.Plots.resize('ndf-histogram');
+        const plotEl = document.getElementById('ndf-histogram');
+        if (!plotEl) return;
+
+        const data = [trace];
+
+        // Optional: draw a unit circle to sanity-check the footprint
+        if (this.params.ndf.drawUnitCircle) {
+            const circleTheta = Array.from(
+                { length: 361 },
+                (_, i) => (i * Math.PI) / 180
+            );
+            data.push({
+                x: circleTheta.map(t => Math.cos(t)),
+                y: circleTheta.map(t => Math.sin(t)),
+                mode: 'lines',
+                type: 'scatter',
+                line: { width: 1 },
+                hoverinfo: 'skip',
+                showlegend: false,
+            });
+        }
+
+        Plotly.newPlot(plotEl, data, layout, config).then(() => {
+            Plotly.Plots.resize(plotEl); // pass element, not string id
         });
     }
-
-    runTests() {
-        const lines = [];
-        try {
-            lines.push(
-                this.ok(`Vertices: ${(this.params.resolution + 1) ** 2}`)
-            );
-        } catch (e) {
-            lines.push(this.fail('Tests errored', e.message || e));
-        }
-        this.report(lines);
-    }
 }
-
-// Expose for console access
-window.THREE = THREE;
