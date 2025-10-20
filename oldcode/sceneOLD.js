@@ -1,10 +1,5 @@
-// ================================================================
-// SCENE RENDERER CLASS
-// ================================================================
-
 class SceneRenderer {
     constructor() {
-        // Scene properties
         this.scene = null;
         this.camera = null;
         this.renderer = null;
@@ -12,16 +7,13 @@ class SceneRenderer {
         this.cameraControls = null;
         this.startingAngle = 15;
 
-        // Physics properties
         this.staticFriction = 0.6;
         this.kineticFriction = 0.5;
         this.mass = 5;
 
-        // State properties
         this.logging = false;
         this.paused = false;
 
-        // Initialize scene
         this.init();
         this.addPlane();
         this.addCube(this.staticFriction, this.kineticFriction);
@@ -31,10 +23,6 @@ class SceneRenderer {
 
         this.animate();
     }
-
-    // ================================================================
-    // INITIALIZATION METHODS
-    // ================================================================
 
     init() {
         try {
@@ -75,10 +63,6 @@ class SceneRenderer {
         this.cameraControls = new CameraControls(this.camera, this.renderer);
     }
 
-    // ================================================================
-    // SCENE OBJECT METHODS
-    // ================================================================
-
     addPlane() {
         const plane = new Plane(this.startingAngle);
         this.plane = plane;
@@ -102,10 +86,6 @@ class SceneRenderer {
         this.scene.add(cubeMesh);
     }
 
-    // ================================================================
-    // CAMERA AND ANIMATION METHODS
-    // ================================================================
-
     resetCamera() {
         if (this.cameraControls) {
             this.cameraControls.reset();
@@ -127,10 +107,6 @@ class SceneRenderer {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    // ================================================================
-    // UTILITY METHODS
-    // ================================================================
-
     showError(message) {
         const errorDiv = document.getElementById('error');
         errorDiv.textContent = message;
@@ -138,57 +114,11 @@ class SceneRenderer {
     }
 }
 
-// ================================================================
-// GLOBAL VARIABLES AND STATE
-// ================================================================
-
 let sceneRenderer;
-
-// Surface visualizer state
-let surfaceVisualizer = new SurfaceVisualizer(false); // false = histogram only mode
-let isVisible = false;
-
-// NDF MAPPING HAPPENS HERE BUT HOW
-
-console.log(surfaceVisualizer.getNDFData());
-
-// ================================================================
-// UTILITY FUNCTIONS
-// ================================================================
-
-function resetScene(angle) {
-    sceneRenderer.startingAngle = angle;
-    if (sceneRenderer) {
-        if (sceneRenderer.cube && sceneRenderer.cube.getMesh()) {
-            sceneRenderer.scene.remove(sceneRenderer.cube.getMesh());
-        }
-        if (sceneRenderer.plane && sceneRenderer.plane.getMesh()) {
-            sceneRenderer.scene.remove(sceneRenderer.plane.getMesh());
-        }
-        sceneRenderer.addPlane();
-        sceneRenderer.addCube(
-            sceneRenderer.staticFriction,
-            sceneRenderer.kineticFriction,
-            sceneRenderer.mass
-        );
-        sceneRenderer.rigidBodySim = new RigidBodySimScene(
-            sceneRenderer.cube,
-            sceneRenderer.plane
-        );
-    }
-}
-
-// ================================================================
-// INITIALIZATION
-// ================================================================
 
 window.addEventListener('load', () => {
     sceneRenderer = new SceneRenderer();
 });
-
-// ================================================================
-// EVENT LISTENERS - MAIN CONTROL PANEL
-// ================================================================
 
 const resetCameraBtn = document.getElementById('resetCameraBtn');
 if (resetCameraBtn) {
@@ -198,7 +128,6 @@ if (resetCameraBtn) {
         }
     });
 }
-
 const pauseBtn = document.getElementById('pauseBtn');
 if (pauseBtn) {
     pauseBtn.addEventListener('click', () => {
@@ -211,6 +140,16 @@ if (pauseBtn) {
                 ? '#4caf50'
                 : '#888';
         }
+    });
+}
+
+const resetSceneBtn = document.getElementById('resetSceneBtn');
+const angleSelect = document.getElementById('angleSelect');
+
+if (resetSceneBtn && angleSelect) {
+    resetSceneBtn.addEventListener('click', () => {
+        const selectedAngle = parseFloat(angleSelect.value);
+        resetScene(selectedAngle);
     });
 }
 
@@ -228,60 +167,6 @@ if (toggleLoggingBtn) {
         }
     });
 }
-
-// ================================================================
-// EVENT LISTENERS - RIGHT CONTROL PANEL
-// ================================================================
-
-const resetSceneBtn = document.getElementById('resetSceneBtn');
-const angleSelect = document.getElementById('angleSelect');
-
-if (resetSceneBtn && angleSelect) {
-    resetSceneBtn.addEventListener('click', () => {
-        const selectedAngle = parseFloat(angleSelect.value);
-        resetScene(selectedAngle);
-    });
-}
-
-// Static friction slider
-const staticFrictionSlider = document.getElementById('staticFrictionSlider');
-const staticFrictionValue = document.getElementById('staticFrictionValue');
-
-if (staticFrictionSlider && staticFrictionValue) {
-    staticFrictionSlider.addEventListener('input', () => {
-        const value = parseFloat(staticFrictionSlider.value);
-        staticFrictionValue.textContent = value.toFixed(2);
-        if (sceneRenderer) {
-            sceneRenderer.staticFriction = value;
-        }
-    });
-    // Initialize display
-    staticFrictionValue.textContent = parseFloat(
-        staticFrictionSlider.value
-    ).toFixed(2);
-}
-
-// Kinetic friction slider
-const kineticFrictionSlider = document.getElementById('kineticFrictionSlider');
-const kineticFrictionValue = document.getElementById('kineticFrictionValue');
-
-if (kineticFrictionSlider && kineticFrictionValue) {
-    kineticFrictionSlider.addEventListener('input', () => {
-        const value = parseFloat(kineticFrictionSlider.value);
-        kineticFrictionValue.textContent = value.toFixed(2);
-        if (sceneRenderer) {
-            sceneRenderer.kineticFriction = value;
-        }
-    });
-    // Initialize display
-    kineticFrictionValue.textContent = parseFloat(
-        kineticFrictionSlider.value
-    ).toFixed(2);
-}
-
-// ================================================================
-// EVENT LISTENERS - SURFACE VISUALIZER
-// ================================================================
 
 const openSurfaceVisualizerBtn = document.getElementById(
     'openSurfaceVisualizerBtn'
@@ -310,47 +195,121 @@ if (openSurfaceVisualizerBtn) {
                 openSurfaceVisualizerBtn.style.backgroundColor = '#888';
             }
         }
+        const surfaceVisualizer = new SurfaceVisualizer(false); // true = full render mode
     });
 }
 
-// Surface toggle button
+const staticFrictionSlider = document.getElementById('staticFrictionSlider');
+const kineticFrictionSlider = document.getElementById('kineticFrictionSlider');
+const staticFrictionValue = document.getElementById('staticFrictionValue');
+const kineticFrictionValue = document.getElementById('kineticFrictionValue');
+const massValue = document.getElementById('massValue');
+const massSlider = document.getElementById('massSlider');
+
+if (massSlider && massValue) {
+    massSlider.addEventListener('input', () => {
+        const value = parseFloat(massSlider.value);
+        massValue.textContent = value.toFixed(2);
+        if (sceneRenderer) {
+            sceneRenderer.mass = value;
+        }
+    });
+    // Initialize display
+    massValue.textContent = parseFloat(massSlider.value).toFixed(2);
+}
+
+if (staticFrictionSlider && staticFrictionValue) {
+    staticFrictionSlider.addEventListener('input', () => {
+        const value = parseFloat(staticFrictionSlider.value);
+        staticFrictionValue.textContent = value.toFixed(2);
+        if (sceneRenderer) {
+            sceneRenderer.staticFriction = value;
+        }
+    });
+    // Initialize display
+    staticFrictionValue.textContent = parseFloat(
+        staticFrictionSlider.value
+    ).toFixed(2);
+}
+
+if (kineticFrictionSlider && kineticFrictionValue) {
+    kineticFrictionSlider.addEventListener('input', () => {
+        const value = parseFloat(kineticFrictionSlider.value);
+        kineticFrictionValue.textContent = value.toFixed(2);
+        if (sceneRenderer) {
+            sceneRenderer.kineticFriction = value;
+        }
+    });
+    // Initialize display
+    kineticFrictionValue.textContent = parseFloat(
+        kineticFrictionSlider.value
+    ).toFixed(2);
+}
+
+function resetScene(angle) {
+    sceneRenderer.startingAngle = angle;
+    if (sceneRenderer) {
+        if (sceneRenderer.cube && sceneRenderer.cube.getMesh()) {
+            sceneRenderer.scene.remove(sceneRenderer.cube.getMesh());
+        }
+        if (sceneRenderer.plane && sceneRenderer.plane.getMesh()) {
+            sceneRenderer.scene.remove(sceneRenderer.plane.getMesh());
+        }
+        sceneRenderer.addPlane();
+        sceneRenderer.addCube(
+            sceneRenderer.staticFriction,
+            sceneRenderer.kineticFriction,
+            sceneRenderer.mass
+        );
+        sceneRenderer.rigidBodySim = new RigidBodySimScene(
+            sceneRenderer.cube,
+            sceneRenderer.plane
+        );
+    }
+}
+
+// Check if required elements exist
 const toggleSurfaceBtn = document.getElementById('toggleSurfaceBtn');
 const surfaceControls = document.getElementById('surfaceControls');
 const surfacePanel = document.querySelector('.control-panel-surface');
 
-if (toggleSurfaceBtn && surfaceControls) {
-    toggleSurfaceBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        isVisible = !isVisible;
+// Initialize the surface visualizer in histogram-only mode
+let surfaceVisualizer = new SurfaceVisualizer(false); // false = histogram only mode
+// State tracking
+let isVisible = false;
 
-        if (isVisible) {
-            // Show controls and expand panel
-            surfaceControls.style.display = 'block';
-            if (surfacePanel) {
-                surfacePanel.classList.add('expanded');
-            }
-            toggleSurfaceBtn.textContent = 'Hide';
+// Toggle surface controls and histogram
+toggleSurfaceBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    isVisible = !isVisible;
 
-            // Generate the histogram in the miniView area
-            try {
-                surfaceVisualizer.createNDFHistogram();
-            } catch (error) {
-                // Silently handle error
-            }
-        } else {
-            // Hide controls and collapse panel
-            surfaceControls.style.display = 'none';
-            if (surfacePanel) {
-                surfacePanel.classList.remove('expanded');
-            }
-            toggleSurfaceBtn.textContent = 'Show';
-
-            // Clear the histogram
-            const histogramPlot = document.getElementById('ndf-histogram');
-            if (histogramPlot) {
-                histogramPlot.innerHTML = '';
-            }
+    if (isVisible) {
+        // Show controls and expand panel
+        surfaceControls.style.display = 'block';
+        if (surfacePanel) {
+            surfacePanel.classList.add('expanded');
         }
-    });
-}
+        toggleSurfaceBtn.textContent = 'Hide';
+
+        // Generate the histogram in the miniView area
+        try {
+            surfaceVisualizer.createNDFHistogram();
+        } catch (error) {
+            // Silently handle error
+        }
+    } else {
+        // Hide controls and collapse panel
+        surfaceControls.style.display = 'none';
+        if (surfacePanel) {
+            surfacePanel.classList.remove('expanded');
+        }
+        toggleSurfaceBtn.textContent = 'Show';
+
+        // Clear the histogram
+        const histogramPlot = document.getElementById('ndf-histogram');
+        if (histogramPlot) {
+            histogramPlot.innerHTML = '';
+        }
+    }
+});

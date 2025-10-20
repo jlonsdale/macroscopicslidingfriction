@@ -510,4 +510,8 @@ class SurfaceVisualizer {
             Plotly.Plots.resize(plotEl); // pass element, not string id
         });
     }
+
+    getNDFData() {
+        return this.areaWeightedNDF();
+    }
 }
