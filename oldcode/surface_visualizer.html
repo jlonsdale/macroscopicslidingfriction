@@ -261,14 +261,7 @@
         <script>// Initialize the application
             const surfaceVisualizer = new SurfaceVisualizer(true);
 
-            // Ensure DOM is loaded before setting up controls
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => {
-                    surfaceVisualizer.setupControls();
-                });
-            } else {
-                // DOM already loaded, setup controls immediately
-                setTimeout(() => surfaceVisualizer.setupControls(), 0);
-            }
+   
 </script>
 </html>
+    

@@ -80,7 +80,7 @@ body {
     margin-bottom: 4px;
     border: none;
     border-radius: 3px;
-    background: #4caf50;
+    background: #666;
     color: white;
     font-size: 11px;
     cursor: pointer;
@@ -88,11 +88,15 @@ body {
 }
 
 .control-panel button:hover {
-    box-shadow: 0 0 4px 1px #ffffff;
+    background: #4caf50;
 }
 
 .control-panel button.secondary {
-    background: #888;
+    background: #666;
+}
+
+.control-panel button.secondary:hover {
+    background: #4caf50;
 }
 
 /* Right Control Panel */
@@ -137,6 +141,23 @@ body {
     font-size: 10px;
     text-align: center;
     margin-top: 1px;
+}
+
+.control-panel-right button {
+    width: 100%;
+    padding: 6px;
+    margin-bottom: 4px;
+    border: none;
+    border-radius: 3px;
+    background: #666;
+    color: white;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background-color 0.1s;
+}
+
+.control-panel-right button:hover {
+    background: #4caf50;
 }
 
 /* Bottom Control Panel */
@@ -331,7 +352,7 @@ body {
 }
 
 .toggle-btn:hover {
-    background: #777;
+    background: #4caf50;
 }
 
 /* Surface Controls */

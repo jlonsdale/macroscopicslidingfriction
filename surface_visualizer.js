@@ -1,42 +1,17 @@
-// SurfaceVisualizer.js
-// Assumes THREE and Plotly are available as globals
-
 class SurfaceVisualizer {
     constructor(render = true) {
-        this.renderMode = render;
-        this.initializeUIHelpers();
-        this.initializeThreeJS();
         this.initializeParams(render);
+        this.initializeThreeJS();
         this.initializeGeometry();
         this.setupEventListeners();
         this.setupControls();
 
-        // Only do initial repaint if we have the required elements (full mode)
-        const hasControls = document.getElementById('surfaceType');
-        if (hasControls) {
-            this.repaint();
-        }
-
+        this.repaint();
         if (this.params.render) {
             this.render();
         }
     }
 
-    // ——— UI helpers (self-test ticker)
-    initializeUIHelpers() {
-        this.testsEl = document.getElementById('tests');
-        this.ok = name => `<span class="ok">✔</span> ${name}`;
-        this.fail = (name, msg = '') =>
-            `<span class="fail">✖</span> ${name}${msg ? ': ' + msg : ''}`;
-    }
-
-    report(lines) {
-        if (this.testsEl)
-            this.testsEl.innerHTML =
-                '<b>Self-tests</b><br/>' + lines.join('<br/>');
-    }
-
-    // ——— Three.js boot
     initializeThreeJS() {
         const app =
             document.getElementById('app') ||
@@ -47,29 +22,24 @@ class SurfaceVisualizer {
         });
         this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
         this.renderer.setSize(innerWidth, innerHeight);
-
-        // Only append to DOM if we're in render mode and have a container
-        if (app && this.renderMode) {
-            app.appendChild(this.renderer.domElement);
-        }
-
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x0b0d10);
-
-        this.camera = new THREE.PerspectiveCamera(
-            55,
-            innerWidth / innerHeight,
-            0.1,
-            5000
-        );
-        this.camera.position.set(60, 30, 60);
-        this.camera.lookAt(0, 0, 0);
-
-        const hemi = new THREE.HemisphereLight(0xffffff, 0x333333, 0.9);
-        this.scene.add(hemi);
-        const dir = new THREE.DirectionalLight(0xffffff, 1.0);
-        dir.position.set(20, 40, 10);
-        this.scene.add(dir);
+        if (this.params.render) {
+            app.appendChild(this.renderer.domElement);
+            this.scene.background = new THREE.Color(0x0b0d10);
+            this.camera = new THREE.PerspectiveCamera(
+                55,
+                innerWidth / innerHeight,
+                0.1,
+                5000
+            );
+            this.camera.position.set(60, 30, 60);
+            this.camera.lookAt(0, 0, 0);
+            const hemi = new THREE.HemisphereLight(0xffffff, 0x333333, 0.9);
+            this.scene.add(hemi);
+            const dir = new THREE.DirectionalLight(0xffffff, 1.0);
+            dir.position.set(20, 40, 10);
+            this.scene.add(dir);
+        }
     }
 
     // ——— Unified params
@@ -98,8 +68,6 @@ class SurfaceVisualizer {
                 seed: 42,
             },
             ndf: {
-                keepHemisphereOnly: true, // filter to +Y (up) hemisphere
-                drawUnitCircle: true, // overlay unit circle for sanity
                 bins: 100, // histogram bins per axis
             },
         };
@@ -288,7 +256,6 @@ class SurfaceVisualizer {
             );
             this.pos.needsUpdate = true;
             this.updateGridHeight(amplitude);
-            this.runTests();
         }
         this.geo.computeVertexNormals();
         this.geo.normalsNeedUpdate = true;
@@ -393,11 +360,9 @@ class SurfaceVisualizer {
     }
 
     // ——— NDF implementation (Y-up)
-    // Map each (unit) normal to the tangent plane axes (X,Z). Optionally keep only +Y hemisphere.
     normalsToNdfXY(normals) {
         const ndfSamples = [];
         for (const n of normals) {
-            if (this.params.ndf.keepHemisphereOnly && n.y < 0) continue;
             // With Y-up, spherical mapping gives (sinθ cosφ, sinθ sinφ) == (nx, nz)
             ndfSamples.push({ x: n.x, y: n.z });
         }
@@ -442,23 +407,17 @@ class SurfaceVisualizer {
             const area = cross.length() * 0.5;
             if (area === 0) continue;
 
-            const n = cross.normalize(); // face normal (winding may flip it)
-            // Hemisphere filter happens in normalsToNdfXY; but we must keep weights aligned.
-            // We'll push now and filter both lists together below.
+            const n = cross.normalize();
             normals.push(n);
             areaWeights.push(area);
         }
 
-        // Produce NDF samples with optional hemisphere filtering
         const ndfSamples = [];
         const filteredWeights = [];
         const filteredNormals = [];
 
         for (let i = 0; i < normals.length; i++) {
             const n = normals[i];
-            // Respect hemisphere filter setting
-            if (this.params.ndf.keepHemisphereOnly && n.y < 0) continue;
-            // map to (nx, nz)
             ndfSamples.push({ x: n.x, y: n.z });
             filteredWeights.push(areaWeights[i]);
             filteredNormals.push(n);
@@ -487,7 +446,6 @@ class SurfaceVisualizer {
             y: ndfY,
             z: areaWeights, // same length as samples
             type: 'histogram2d',
-            colorscale: 'magma',
             showscale: true,
             colorbar: {
                 title: { text: 'Density', font: { color: 'white', size: 10 } },
@@ -547,23 +505,6 @@ class SurfaceVisualizer {
         if (!plotEl) return;
 
         const data = [trace];
-
-        // Optional: draw a unit circle to sanity-check the footprint
-        if (this.params.ndf.drawUnitCircle) {
-            const circleTheta = Array.from(
-                { length: 361 },
-                (_, i) => (i * Math.PI) / 180
-            );
-            data.push({
-                x: circleTheta.map(t => Math.cos(t)),
-                y: circleTheta.map(t => Math.sin(t)),
-                mode: 'lines',
-                type: 'scatter',
-                line: { width: 1 },
-                hoverinfo: 'skip',
-                showlegend: false,
-            });
-        }
 
         Plotly.newPlot(plotEl, data, layout, config).then(() => {
             Plotly.Plots.resize(plotEl); // pass element, not string id
