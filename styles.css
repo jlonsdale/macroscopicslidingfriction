@@ -29,27 +29,45 @@ body {
     z-index: 10;
     background: rgba(0, 0, 0, 0.8);
     border-radius: 6px;
-    padding: 8px;
+    padding: 6px;
     width: 150px;
     font-family: Arial, sans-serif;
 }
 
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.slider-container input[type='range'] {
+    flex: 1;
+    margin: 2px 0;
+}
+
 .control-panel h3 {
     color: white;
-    margin: 0 0 8px 0;
-    font-size: 13px;
+    margin: 0 0 6px 0;
+    font-size: 12px;
     text-align: center;
 }
 
 .control-group {
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 .control-group label {
     color: white;
-    display: block;
-    margin-bottom: 3px;
-    font-size: 11px;
+    display: inline-block;
+    margin-bottom: 2px;
+    font-size: 10px;
+    width: 70%;
+}
+
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .control-panel select {
@@ -63,15 +81,18 @@ body {
 
 .control-panel input[type='range'] {
     width: 100%;
-    margin: 3px 0;
+    margin: 2px 0;
     cursor: pointer;
+    height: 16px;
 }
 
 .slider-value {
     color: white;
-    font-size: 10px;
+    font-size: 9px;
     text-align: center;
-    margin-top: 1px;
+    margin-top: 0px;
+    min-width: 25px;
+    flex-shrink: 0;
 }
 
 .control-panel button {
@@ -107,40 +128,44 @@ body {
     z-index: 10;
     background: rgba(0, 0, 0, 0.8);
     border-radius: 6px;
-    padding: 8px;
+    padding: 6px;
     width: 150px;
     font-family: Arial, sans-serif;
 }
 
 .control-panel-right h3 {
     color: white;
-    margin: 0 0 8px 0;
-    font-size: 13px;
+    margin: 0 0 6px 0;
+    font-size: 12px;
     text-align: center;
 }
 
 .control-panel-right .control-group {
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 .control-panel-right .control-group label {
     color: white;
-    display: block;
-    margin-bottom: 3px;
-    font-size: 11px;
+    display: inline-block;
+    margin-bottom: 2px;
+    font-size: 10px;
+    width: 70%;
 }
 
 .control-panel-right input[type='range'] {
     width: 100%;
-    margin: 3px 0;
+    margin: 2px 0;
     cursor: pointer;
+    height: 16px;
 }
 
 .control-panel-right .slider-value {
     color: white;
-    font-size: 10px;
+    font-size: 9px;
     text-align: center;
-    margin-top: 1px;
+    margin-top: 0px;
+    min-width: 25px;
+    flex-shrink: 0;
 }
 
 .control-panel-right button {
@@ -259,7 +284,7 @@ body {
     z-index: 10;
     background: rgba(0, 0, 0, 0.8);
     border-radius: 6px;
-    padding: 8px;
+    padding: 6px;
     width: 150px;
     font-family: Arial, sans-serif;
 }
@@ -270,20 +295,21 @@ body {
 
 .control-panel-surface h3 {
     color: white;
-    margin: 0 0 8px 0;
-    font-size: 13px;
+    margin: 0 0 6px 0;
+    font-size: 12px;
     text-align: center;
 }
 
 .control-panel-surface .control-group {
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 .control-panel-surface .control-group label {
     color: white;
-    display: block;
-    margin-bottom: 3px;
-    font-size: 11px;
+    display: inline-block;
+    margin-bottom: 2px;
+    font-size: 10px;
+    width: 70%;
 }
 
 .control-panel-surface select {
@@ -297,15 +323,18 @@ body {
 
 .control-panel-surface input[type='range'] {
     width: 100%;
-    margin: 3px 0;
+    margin: 2px 0;
     cursor: pointer;
+    height: 16px;
 }
 
 .control-panel-surface .slider-value {
     color: white;
-    font-size: 10px;
+    font-size: 9px;
     text-align: center;
-    margin-top: 1px;
+    margin-top: 0px;
+    min-width: 25px;
+    flex-shrink: 0;
 }
 
 .control-panel-surface button {
