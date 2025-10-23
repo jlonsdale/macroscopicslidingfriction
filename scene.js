@@ -32,7 +32,9 @@ class SceneRenderer {
         this.camera = null;
         this.renderer = null;
         this.cube = null;
+        this.cubetex = null;
         this.plane = null;
+        this.planetex = null;
         this.cameraControls = null;
         this.rigidBodySim = null;
         this.startingAngle = 15;
@@ -198,456 +200,145 @@ let isVisible = false;
 // HISTOGRAM TEXTURE SYSTEM
 // ================================================================
 
-// Extract only the data visualization from a histogram, removing axes and labels
-function extractDataOnlyFromHistogram(sourceCanvas) {
-    const canvas = document.createElement('canvas');
-    canvas.width = sourceCanvas.width;
-    canvas.height = sourceCanvas.height;
-    const ctx = canvas.getContext('2d');
-    const srcCtx = sourceCanvas.getContext('2d');
+// Create a THREE.Texture from the histogram image/canvas
+async function createHistogramTexture(options = {}) {
+    const { width = 512, height = 512 } = options;
+    try {
+        const container = document.getElementById('ndf-histogram');
+        if (!container)
+            throw new Error('Histogram element (#ndf-histogram) not found');
 
-    // Get image data from source
-    const imageData = srcCtx.getImageData(
-        0,
-        0,
-        sourceCanvas.width,
-        sourceCanvas.height
-    );
-    const data = imageData.data;
+        // Helper to create a THREE texture from a canvas
+        const canvasToTexture = canvas => {
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.minFilter = THREE.LinearMipmapLinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            tex.generateMipmaps = true;
+            tex.needsUpdate = true;
+            return tex;
+        };
 
-    // Create new image data for processed version
-    const newImageData = ctx.createImageData(
-        sourceCanvas.width,
-        sourceCanvas.height
-    );
-    const newData = newImageData.data;
-
-    // Define colors to ignore (typical chart background/axis colors)
-    const ignoredColors = [
-        { r: 255, g: 255, b: 255, threshold: 10 }, // White background
-        { r: 0, g: 0, b: 0, threshold: 50 }, // Black text/axes
-        { r: 128, g: 128, b: 128, threshold: 30 }, // Gray grid lines
-        { r: 68, g: 68, b: 68, threshold: 20 }, // Dark gray (#444)
-        { r: 34, g: 34, b: 34, threshold: 20 }, // Very dark gray (#222)
-    ];
-
-    // Function to check if a color should be ignored
-    const shouldIgnoreColor = (r, g, b) => {
-        return ignoredColors.some(ignored => {
-            const distance = Math.sqrt(
-                Math.pow(r - ignored.r, 2) +
-                    Math.pow(g - ignored.g, 2) +
-                    Math.pow(b - ignored.b, 2)
-            );
-            return distance < ignored.threshold;
-        });
-    };
-
-    // Process each pixel
-    for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const a = data[i + 3];
-
-        if (a === 0 || shouldIgnoreColor(r, g, b)) {
-            // Make background/axis pixels transparent
-            newData[i] = 0; // R
-            newData[i + 1] = 0; // G
-            newData[i + 2] = 0; // B
-            newData[i + 3] = 0; // A (transparent)
+        // If the element itself is a canvas or contains a canvas, draw it to a fresh canvas
+        let sourceCanvas = null;
+        if (container instanceof HTMLCanvasElement) {
+            sourceCanvas = container;
         } else {
-            // Keep data colors
-            newData[i] = r;
-            newData[i + 1] = g;
-            newData[i + 2] = b;
-            newData[i + 3] = a;
+            const childCanvas = container.querySelector('canvas');
+            if (childCanvas instanceof HTMLCanvasElement)
+                sourceCanvas = childCanvas;
         }
-    }
-
-    // Find the bounding box of actual data (non-background) pixels
-    let minX = sourceCanvas.width,
-        maxX = 0;
-    let minY = sourceCanvas.height,
-        maxY = 0;
-
-    // Scan for data pixels to find bounds
-    for (let y = 0; y < sourceCanvas.height; y++) {
-        for (let x = 0; x < sourceCanvas.width; x++) {
-            const pixelIndex = (y * sourceCanvas.width + x) * 4;
-            const r = data[pixelIndex];
-            const g = data[pixelIndex + 1];
-            const b = data[pixelIndex + 2];
-            const a = data[pixelIndex + 3];
-
-            // If this is a data pixel (not background/axis)
-            if (a > 0 && !shouldIgnoreColor(r, g, b)) {
-                minX = Math.min(minX, x);
-                maxX = Math.max(maxX, x);
-                minY = Math.min(minY, y);
-                maxY = Math.max(maxY, y);
-            }
-        }
-    }
-
-    // If no data found, return empty canvas
-    if (minX >= maxX || minY >= maxY) {
-        console.log('No data pixels found in histogram');
-        ctx.fillStyle = '#333';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        return canvas;
-    }
-
-    console.log(`Found data bounds: x(${minX}-${maxX}), y(${minY}-${maxY})`);
-
-    // Calculate scaling factors to stretch data to fill entire canvas
-    const dataWidth = maxX - minX + 1;
-    const dataHeight = maxY - minY + 1;
-    const scaleX = sourceCanvas.width / dataWidth;
-    const scaleY = sourceCanvas.height / dataHeight;
-
-    // Create stretched version that fills entire canvas
-    const stretchedData = new Uint8ClampedArray(newData.length);
-
-    // Fill the entire canvas by stretching the data region
-    for (let y = 0; y < sourceCanvas.height; y++) {
-        for (let x = 0; x < sourceCanvas.width; x++) {
-            // Map current position back to original data region
-            const srcX = Math.floor(minX + x / scaleX);
-            const srcY = Math.floor(minY + y / scaleY);
-
-            // Clamp to bounds
-            const clampedX = Math.max(minX, Math.min(maxX, srcX));
-            const clampedY = Math.max(minY, Math.min(maxY, srcY));
-
-            const srcPixelIndex =
-                (clampedY * sourceCanvas.width + clampedX) * 4;
-            const destPixelIndex = (y * sourceCanvas.width + x) * 4;
-
-            const r = data[srcPixelIndex];
-            const g = data[srcPixelIndex + 1];
-            const b = data[srcPixelIndex + 2];
-            const a = data[srcPixelIndex + 3];
-
-            // If it's a data pixel, use it; otherwise use a dark background
-            if (a > 0 && !shouldIgnoreColor(r, g, b)) {
-                stretchedData[destPixelIndex] = r;
-                stretchedData[destPixelIndex + 1] = g;
-                stretchedData[destPixelIndex + 2] = b;
-                stretchedData[destPixelIndex + 3] = a;
-            } else {
-                // Fill non-data areas with dark color
-                stretchedData[destPixelIndex] = 20;
-                stretchedData[destPixelIndex + 1] = 20;
-                stretchedData[destPixelIndex + 2] = 20;
-                stretchedData[destPixelIndex + 3] = 255;
-            }
-        }
-    }
-
-    // Create new image data with stretched content
-    const stretchedImageData = new ImageData(
-        stretchedData,
-        sourceCanvas.width,
-        sourceCanvas.height
-    );
-    ctx.putImageData(stretchedImageData, 0, 0);
-
-    console.log(
-        `Stretched histogram data to fill entire ${sourceCanvas.width}x${sourceCanvas.height} canvas`
-    );
-    return canvas;
-}
-
-// Utility: capture histogram from surface visualizer or create from data
-async function getHistogramCanvas(width = 512, height = 512) {
-    const container = document.getElementById('ndf-histogram');
-
-    // First, try to capture the existing histogram from the surface visualizer
-    if (container) {
-        console.log('Looking for existing histogram in surface visualizer...');
-
-        // Check for canvas element first
-        const existingCanvas = container.querySelector('canvas');
-        if (
-            existingCanvas &&
-            existingCanvas.width > 0 &&
-            existingCanvas.height > 0
-        ) {
-            console.log(
-                'Found existing canvas histogram, using it for texture'
-            );
+        if (sourceCanvas) {
             const canvas = document.createElement('canvas');
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext('2d');
-
-            // Draw the existing histogram canvas to our texture canvas
-            ctx.drawImage(existingCanvas, 0, 0, width, height);
-
-            // Process to remove axes and extract only data
-            return extractDataOnlyFromHistogram(canvas);
+            ctx.clearRect(0, 0, width, height);
+            ctx.drawImage(sourceCanvas, 0, 0, width, height);
+            return canvasToTexture(canvas);
         }
 
-        // Check for SVG element
-        const svg = container.querySelector('svg');
-        if (svg) {
-            console.log('Found existing SVG histogram, converting to canvas');
-            try {
-                const svgData = new XMLSerializer().serializeToString(svg);
-                const img = new Image();
-                const svgBlob = new Blob([svgData], {
-                    type: 'image/svg+xml;charset=utf-8',
-                });
-                const url = URL.createObjectURL(svgBlob);
-
-                return new Promise(resolve => {
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        URL.revokeObjectURL(url);
-
-                        // Process to remove axes and extract only data
-                        resolve(extractDataOnlyFromHistogram(canvas));
-                    };
-                    img.onerror = () => {
-                        console.log(
-                            'Failed to convert SVG, falling back to data generation'
-                        );
-                        URL.revokeObjectURL(url);
-                        resolve(buildCanvasFromNDFData(width, height));
-                    };
-                    img.src = url;
-                });
-            } catch (error) {
-                console.log('Error processing SVG histogram:', error);
-            }
-        }
-
-        // Check for any other visualization elements (like Plotly divs)
-        const plotlyDiv = container.querySelector('.plotly-graph-div');
-        if (plotlyDiv) {
-            console.log('Found Plotly histogram, attempting to capture');
-            try {
-                // Try to export the Plotly chart as an image
-                const plotlyCanvas = await Plotly.toImage(plotlyDiv, {
-                    format: 'canvas',
-                    width: width,
-                    height: height,
-                });
-
-                if (plotlyCanvas) {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    const img = new Image();
-
-                    return new Promise(resolve => {
-                        img.onload = () => {
-                            ctx.drawImage(img, 0, 0, width, height);
-                            // Process to remove axes and extract only data
-                            resolve(extractDataOnlyFromHistogram(canvas));
-                        };
-                        img.onerror = () => {
-                            console.log(
-                                'Failed to load Plotly image, falling back to data generation'
-                            );
-                            resolve(buildCanvasFromNDFData(width, height));
-                        };
-                        img.src = plotlyCanvas;
-                    });
+        // If it contains an <img>, use that
+        const imgEl = container.querySelector('img');
+        if (imgEl) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            await new Promise((resolve, reject) => {
+                if (imgEl.complete) {
+                    ctx.drawImage(imgEl, 0, 0, width, height);
+                    return resolve();
                 }
-            } catch (error) {
-                console.log('Error capturing Plotly histogram:', error);
-            }
+                imgEl.onload = () => {
+                    ctx.drawImage(imgEl, 0, 0, width, height);
+                    resolve();
+                };
+                imgEl.onerror = reject;
+            });
+            return canvasToTexture(canvas);
         }
-    }
 
-    // Fallback: create from raw data
-    console.log('No existing histogram found, generating from NDF data');
-    return buildCanvasFromNDFData(width, height);
-}
+        // If it contains an <svg>, serialize and draw to canvas
+        const svgEl = container.querySelector('svg');
+        if (svgEl) {
+            const serializer = new XMLSerializer();
+            let svgString = serializer.serializeToString(svgEl);
+            if (!/xmlns=/.test(svgString)) {
+                svgString = svgString.replace(
+                    /^<svg/,
+                    '<svg xmlns="http://www.w3.org/2000/svg"'
+                );
+            }
+            // force width/height on the serialized svg
+            svgString = svgString.replace(
+                /<svg([^>]*)>/,
+                `<svg$1 width="${width}" height="${height}">`
+            );
+            const blob = new Blob([svgString], {
+                type: 'image/svg+xml;charset=utf-8',
+            });
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            await new Promise((resolve, reject) => {
+                img.onload = () => {
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.drawImage(img, 0, 0, width, height);
+                    URL.revokeObjectURL(url);
+                    resolve();
+                };
+                img.onerror = e => {
+                    URL.revokeObjectURL(url);
+                    reject(e);
+                };
+                img.src = url;
+            });
+            return canvasToTexture(canvas);
+        }
 
-// Draw a simple histogram from NDF data returned by surfaceVisualizer.getNDFData()
-function buildCanvasFromNDFData(width = 512, height = 512) {
-    console.log(
-        'Building canvas from NDF data, dimensions:',
-        width,
-        'x',
-        height
-    );
-
-    let ndfResult = null;
-    try {
-        if (
-            surfaceVisualizer &&
-            typeof surfaceVisualizer.getNDFData === 'function'
-        ) {
-            ndfResult = surfaceVisualizer.getNDFData();
+        // Fallback: serialize the element (foreignObject) into an SVG and rasterize
+        {
+            const serializer = new XMLSerializer();
+            const htmlString = serializer.serializeToString(container);
+            const svgWrapper = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+                      <foreignObject width="100%" height="100%">${htmlString}</foreignObject>
+                    </svg>`;
+            const blob = new Blob([svgWrapper], {
+                type: 'image/svg+xml;charset=utf-8',
+            });
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            await new Promise((resolve, reject) => {
+                img.onload = () => {
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.drawImage(img, 0, 0, width, height);
+                    URL.revokeObjectURL(url);
+                    resolve();
+                };
+                img.onerror = e => {
+                    URL.revokeObjectURL(url);
+                    reject(e);
+                };
+                img.src = url;
+            });
+            return canvasToTexture(canvas);
         }
     } catch (error) {
-        console.warn('Error getting NDF data:', error);
+        console.error('createHistogramTexture failed:', error);
+        return null;
     }
-
-    console.log('NDF result:', ndfResult);
-
-    // Extract the area weights array from the NDF result
-    let data = null;
-    if (ndfResult && typeof ndfResult === 'object') {
-        if (
-            Array.isArray(ndfResult.areaWeights) &&
-            ndfResult.areaWeights.length > 0
-        ) {
-            data = ndfResult.areaWeights;
-        } else if (
-            Array.isArray(ndfResult.ndfSamples) &&
-            ndfResult.ndfSamples.length > 0
-        ) {
-            data = ndfResult.ndfSamples;
-        }
-    } else if (Array.isArray(ndfResult)) {
-        data = ndfResult;
-    }
-
-    console.log('Extracted data array:', data);
-
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-
-    // Start with a completely clear canvas
-    ctx.clearRect(0, 0, width, height);
-
-    if (!data || !Array.isArray(data) || data.length === 0) {
-        console.log('No valid NDF data available - cannot create texture');
-        // Create a simple solid color canvas to indicate no data
-        ctx.fillStyle = '#444444';
-        ctx.fillRect(0, 0, width, height);
-        return canvas;
-    }
-
-    console.log('Processing NDF data array with length:', data.length);
-
-    // For visualization, we need to reduce the data to a manageable size
-    // Create histogram bins from the large dataset
-    const numBins = Math.min(512, data.length); // Max 512 bins for texture
-    const binSize = Math.ceil(data.length / numBins);
-    const binnedData = [];
-
-    for (let i = 0; i < numBins; i++) {
-        let sum = 0;
-        let count = 0;
-        for (
-            let j = i * binSize;
-            j < Math.min((i + 1) * binSize, data.length);
-            j++
-        ) {
-            sum += data[j];
-            count++;
-        }
-        binnedData.push(count > 0 ? sum / count : 0); // Average value in this bin
-    }
-
-    console.log('Binned data to', binnedData.length, 'values');
-
-    // Find min/max without using spread operator (which causes stack overflow)
-    let maxVal = binnedData[0];
-    let minVal = binnedData[0];
-    for (let i = 1; i < binnedData.length; i++) {
-        if (binnedData[i] > maxVal) maxVal = binnedData[i];
-        if (binnedData[i] < minVal) minVal = binnedData[i];
-    }
-    console.log('Binned data range:', minVal, 'to', maxVal);
-
-    const norm = v =>
-        maxVal === minVal ? 0 : (v - minVal) / (maxVal - minVal);
-
-    // Create a smooth horizontal gradient that fills the entire face
-    // Use binned data stretched across the full width
-    data = binnedData;
-
-    // Create a horizontal gradient using the canvas gradient API for smoothness
-    const gradient = ctx.createLinearGradient(0, 0, width, 0);
-
-    // Add color stops based on data values
-    for (let i = 0; i < data.length; i++) {
-        const position = i / (data.length - 1); // 0 to 1
-        const normalizedValue = norm(data[i]);
-
-        // Color based on data value
-        const hue = 240 - 120 * normalizedValue; // Blue to red gradient
-        const saturation = Math.round(70 + 20 * normalizedValue);
-        const lightness = Math.round(40 + 40 * normalizedValue);
-
-        const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-        gradient.addColorStop(position, color);
-    }
-
-    // Fill the entire canvas with the gradient
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-
-    return canvas;
-}
-
-// Helper function to convert HSL to RGB
-function hslToRgb(h, s, l) {
-    let r, g, b;
-
-    if (s === 0) {
-        r = g = b = l; // achromatic
-    } else {
-        const hue2rgb = (p, q, t) => {
-            if (t < 0) t += 1;
-            if (t > 1) t -= 1;
-            if (t < 1 / 6) return p + (q - p) * 6 * t;
-            if (t < 1 / 2) return q;
-            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-            return p;
-        };
-
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        const p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1 / 3);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1 / 3);
-    }
-
-    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
-}
-
-// Create a THREE.Texture from the histogram image/canvas
-async function createHistogramTexture(options = {}) {
-    // Use square dimensions for cube faces to ensure proper mapping
-    const w = options.width || 512;
-    const h = options.height || 512; // Make height same as width for cube faces
-    const canvas = await getHistogramCanvas(w, h);
-
-    // Use CanvasTexture for best compatibility and dynamic updates
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
-
-    // Use RepeatWrapping to ensure texture fits exactly on each cube face
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-
-    // Set repeat to 1,1 to show texture exactly once per face
-    texture.repeat.set(1, 1);
-    texture.offset.set(0, 0);
-
-    // Use nearest filtering for crisp histogram appearance
-    texture.minFilter = THREE.NearestFilter;
-    texture.magFilter = THREE.NearestFilter;
-
-    // Prevent texture flipping
-    texture.flipY = false;
-
-    return texture;
 }
 
 // Convenience: apply histogram texture to a mesh's material (e.g. the cube)
@@ -655,26 +346,130 @@ async function createHistogramTexture(options = {}) {
 const applyHistogramTextureBtn = document.getElementById(
     'applyHistogramTextureBtn'
 );
-if (applyHistogramTextureBtn) {
-    applyHistogramTextureBtn.addEventListener('click', async () => {
-        applyHistogramTextureBtn.disabled = true;
-        const prevText = applyHistogramTextureBtn.textContent;
-        applyHistogramTextureBtn.textContent = 'Applying...';
+const applyButtons = Array.from(
+    document.querySelectorAll('.applyHistogramTextureBtn')
+);
+
+function getTargetMeshes(target) {
+    if (!sceneRenderer) return [];
+    const meshes = [];
+    const cubeMesh =
+        sceneRenderer.cube && typeof sceneRenderer.cube.getMesh === 'function'
+            ? sceneRenderer.cube.getMesh()
+            : null;
+    const planeMesh =
+        sceneRenderer.plane && typeof sceneRenderer.plane.getMesh === 'function'
+            ? sceneRenderer.plane.getMesh()
+            : null;
+
+    switch ((target || 'cube').toLowerCase()) {
+        case 'cube':
+            if (cubeMesh) meshes.push(cubeMesh);
+            break;
+        case 'plane':
+            if (planeMesh) meshes.push(planeMesh);
+            break;
+        case 'both':
+            if (cubeMesh) meshes.push(cubeMesh);
+            if (planeMesh) meshes.push(planeMesh);
+            break;
+        case 'all':
+            if (sceneRenderer && sceneRenderer.scene) {
+                sceneRenderer.scene.traverse(obj => {
+                    if (obj.isMesh) meshes.push(obj);
+                });
+            }
+            break;
+        default:
+            // allow custom names or fallback to cube
+            if (cubeMesh) meshes.push(cubeMesh);
+            break;
+    }
+    return meshes;
+}
+
+async function applyTextureToMeshWithProvidedTexture(mesh, texture) {
+    if (!mesh || !texture) return false;
+    try {
+        const material = Array.isArray(mesh.material)
+            ? mesh.material[0]
+            : mesh.material;
+        if (!material) return false;
+
+        // Apply texture to typical material slots or shader uniforms
+        if ('map' in material) {
+            material.map = texture;
+        } else if (material.uniforms && material.uniforms.map) {
+            material.uniforms.map.value = texture;
+        } else if (material.uniforms && material.uniforms.uMap) {
+            material.uniforms.uMap.value = texture;
+        } else {
+            material.map = texture;
+        }
+
+        // Make sure texture and material updates are visible
+        if (material.color && typeof material.color.setHex === 'function') {
+            material.color.setHex(0xffffff);
+        }
+        texture.needsUpdate = true;
+        material.needsUpdate = true;
+
+        // Optional: ensure transparency settings don't hide the texture
+        material.transparent = true;
+        material.opacity = 0.95;
+
+        return true;
+    } catch (err) {
+        console.error('applyTextureToMeshWithProvidedTexture error:', err);
+        return false;
+    }
+}
+
+applyButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+        console.log('im in this FUNCTION');
+        const prevText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Applying...';
 
         try {
             if (!sceneRenderer) throw new Error('Scene not initialized');
 
-            const mesh =
-                sceneRenderer.cube &&
-                typeof sceneRenderer.cube.getMesh === 'function'
-                    ? sceneRenderer.cube.getMesh()
-                    : null;
-            if (!mesh) throw new Error('No target mesh found');
+            const target = btn.dataset.target || 'cube';
+            const meshes = getTargetMeshes(target);
+            if (!meshes.length)
+                throw new Error('No target meshes found for: ' + target);
 
-            const texture = await applyHistogramTextureToMesh(mesh);
-            if (!texture) throw new Error('Failed to create/apply texture');
+            // Create a single texture and reuse for all target meshes
+            const texture = await createHistogramTexture({
+                width: 512,
+                height: 512,
+            });
+            // store the created texture on the sceneRenderer for later use
+            if (sceneRenderer && texture) {
+                const t = texture;
+                const lowerTarget = (target || 'cube').toLowerCase();
 
-            // force a render update if renderer available
+                if (lowerTarget === 'cube') {
+                    sceneRenderer.cubetex = t;
+                }
+
+                if (lowerTarget === 'plane') {
+                    sceneRenderer.planetex = t;
+                }
+            }
+            if (!texture) throw new Error('Failed to create histogram texture');
+
+            // Apply texture to every selected mesh (reuse same texture instance)
+            const results = await Promise.all(
+                meshes.map(m =>
+                    applyTextureToMeshWithProvidedTexture(m, texture)
+                )
+            );
+            if (!results.some(r => r))
+                throw new Error('Failed to apply texture to any target mesh');
+
+            // Force one render pass to update the view
             if (
                 sceneRenderer.renderer &&
                 sceneRenderer.scene &&
@@ -685,76 +480,24 @@ if (applyHistogramTextureBtn) {
                     sceneRenderer.camera
                 );
             }
-            applyHistogramTextureBtn.textContent = 'Applied';
+
+            btn.textContent = 'Applied';
         } catch (err) {
-            console.error('applyHistogramTextureBtn error:', err);
-            applyHistogramTextureBtn.textContent = 'Error';
+            console.error('applyHistogramTexture button error:', err);
+            btn.textContent = 'Error';
         } finally {
+            // Re-enable the button after a short delay to show the status
             setTimeout(() => {
-                applyHistogramTextureBtn.disabled = false;
-                applyHistogramTextureBtn.textContent = prevText;
-            }, 1000);
-        }
-    });
-}
-async function applyHistogramTextureToMesh(mesh) {
-    console.log('Applying histogram texture to mesh:', mesh);
-    if (!mesh) return null;
-    try {
-        const texture = await createHistogramTexture({
-            width: 512,
-            height: 512,
-        });
-        console.log('Created texture:', texture);
-        console.log('Texture image data:', texture.image);
+                btn.disabled = false;
+                btn.textContent = prevText;
+            }, 1500);
 
-        const material = Array.isArray(mesh.material)
-            ? mesh.material[0]
-            : mesh.material;
-        if (!material) return texture;
-
-        // Ensure the geometry has proper UV coordinates for cube mapping
-        if (mesh.geometry && mesh.geometry instanceof THREE.BoxGeometry) {
-            // BoxGeometry already has proper UV coordinates, but we can verify/optimize
-            const uvAttribute = mesh.geometry.attributes.uv;
-            if (uvAttribute) {
-                // UV coordinates are already set up correctly for box geometry
-                console.log('UV coordinates are properly set for cube faces');
+            if (sceneRenderer) {
+                resetScene(sceneRenderer.startingAngle);
             }
         }
-
-        // Apply texture to material
-        if ('map' in material) {
-            material.map = texture;
-        } else if (material.uniforms && material.uniforms.map) {
-            material.uniforms.map.value = texture;
-        } else if (material.uniforms && material.uniforms.uMap) {
-            material.uniforms.uMap.value = texture;
-        } else {
-            // Last resort: attach map property
-            material.map = texture;
-        }
-
-        // Reset material color to white so texture shows properly
-        // (Lambert material multiplies texture by base color)
-        material.color.setHex(0xffffff);
-
-        // Ensure proper texture mapping settings
-        material.transparent = true;
-        material.opacity = 0.9;
-
-        texture.needsUpdate = true;
-        material.needsUpdate = true;
-
-        console.log(
-            'Histogram texture applied successfully with exact cube mapping'
-        );
-        return texture;
-    } catch (error) {
-        console.error('applyHistogramTextureToMesh error:', error);
-        return null;
-    }
-}
+    });
+});
 
 // ================================================================
 // SCENE UTILITY FUNCTIONS
@@ -775,10 +518,126 @@ function resetScene(angle) {
             sceneRenderer.kineticFriction,
             sceneRenderer.mass
         );
-        sceneRenderer.rigidBodySim = new RigidBodySimScene(
-            sceneRenderer.cube,
-            sceneRenderer.plane
-        );
+        // Re-apply previously created histogram textures (if any) to the newly created meshes
+
+        if (
+            sceneRenderer.cubetex &&
+            sceneRenderer.cube &&
+            typeof sceneRenderer.cube.getMesh === 'function'
+        ) {
+            const cubeMesh = sceneRenderer.cube.getMesh();
+            applyTextureToMeshWithProvidedTexture(
+                cubeMesh,
+                sceneRenderer.cubetex
+            );
+        }
+        if (
+            sceneRenderer.planetex &&
+            sceneRenderer.plane &&
+            typeof sceneRenderer.plane.getMesh === 'function'
+        ) {
+            const planeMesh = sceneRenderer.plane.getMesh();
+            applyTextureToMeshWithProvidedTexture(
+                planeMesh,
+                sceneRenderer.planetex
+            );
+        }
+        // Force a render to make sure textures are visible immediately
+        if (
+            sceneRenderer &&
+            sceneRenderer.renderer &&
+            sceneRenderer.scene &&
+            sceneRenderer.camera
+        ) {
+            sceneRenderer.renderer.render(
+                sceneRenderer.scene,
+                sceneRenderer.camera
+            );
+        }
+    }
+    sceneRenderer.rigidBodySim = new RigidBodySimScene(
+        sceneRenderer.cube,
+        sceneRenderer.plane
+    );
+}
+
+// ================================================================
+// RESET TEXTURE FUNCTION
+// ================================================================
+
+function resetTextures() {
+    try {
+        if (sceneRenderer) {
+            // Reset stored textures
+            sceneRenderer.cubetex = null;
+            sceneRenderer.planetex = null;
+
+            // Reset cube material to original state
+            if (sceneRenderer.cube && sceneRenderer.cube.mesh) {
+                const cubeMaterial = sceneRenderer.cube.mesh.material;
+                if (cubeMaterial) {
+                    cubeMaterial.map = null;
+                    cubeMaterial.color.setHex(0x00ff88); // Original cube color
+                    cubeMaterial.transparent = true;
+                    cubeMaterial.opacity = 0.8;
+                    cubeMaterial.needsUpdate = true;
+                }
+            }
+
+            // Reset plane material to original checkerboard texture
+            if (sceneRenderer.plane && sceneRenderer.plane.mesh) {
+                const planeMaterial = sceneRenderer.plane.mesh.material;
+                if (planeMaterial) {
+                    // Recreate the original checkerboard texture
+                    const size = 512;
+                    const squares = 32;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    const squareSize = size / squares;
+
+                    for (let y = 0; y < squares; y++) {
+                        for (let x = 0; x < squares; x++) {
+                            ctx.fillStyle =
+                                (x + y) % 2 === 0 ? '#9e93dbff' : '#3a3458ff';
+                            ctx.fillRect(
+                                x * squareSize,
+                                y * squareSize,
+                                squareSize,
+                                squareSize
+                            );
+                        }
+                    }
+                    const originalTexture = new THREE.CanvasTexture(canvas);
+                    originalTexture.wrapS = THREE.RepeatWrapping;
+                    originalTexture.wrapT = THREE.RepeatWrapping;
+                    originalTexture.repeat.set(1, 1);
+
+                    planeMaterial.map = originalTexture;
+                    planeMaterial.needsUpdate = true;
+                }
+            }
+
+            // Re-enable and reset all apply buttons
+            const applyButtons = Array.from(
+                document.querySelectorAll('[data-target]')
+            );
+            applyButtons.forEach(btn => {
+                btn.disabled = false;
+                if (
+                    btn.textContent === 'Applied' ||
+                    btn.textContent === 'Error' ||
+                    btn.textContent === 'Applying...'
+                ) {
+                    btn.textContent = 'Apply Histogram Texture';
+                }
+            });
+
+            console.log('Textures reset successfully');
+        }
+    } catch (err) {
+        console.error('Error resetting textures:', err);
     }
 }
 
@@ -839,6 +698,14 @@ if (resetSceneBtn && angleSelect) {
     resetSceneBtn.addEventListener('click', () => {
         const selectedAngle = parseFloat(angleSelect.value);
         resetScene(selectedAngle);
+    });
+}
+
+// Reset Texture Button
+const resetTextureBtn = document.getElementById('resetTextureBtn');
+if (resetTextureBtn) {
+    resetTextureBtn.addEventListener('click', () => {
+        resetTextures();
     });
 }
 

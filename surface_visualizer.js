@@ -432,83 +432,93 @@ class SurfaceVisualizer {
 
     createNDFHistogram() {
         const { ndfSamples, areaWeights } = this.areaWeightedNDF();
-        if (!ndfSamples.length) return;
+        const bins = this.params.ndf.bins;
+        const histogram = new Array(bins * bins).fill(0);
+        const binSize = 2.0 / bins;
 
-        const ndfX = ndfSamples.map(s => s.x);
-        const ndfY = ndfSamples.map(s => s.y);
+        for (let i = 0; i < ndfSamples.length; i++) {
+            const sample = ndfSamples[i];
+            const weight = areaWeights[i];
+            const nx = sample.x;
+            const ny = sample.y;
+            const binX = Math.floor((nx + 1.0) / binSize);
+            const binY = Math.floor((ny + 1.0) / binSize);
+            if (binX >= 0 && binX < bins && binY >= 0 && binY < bins) {
+                histogram[binY * bins + binX] += weight;
+            }
+        }
+        // render histogram into a canvas, produce a CanvasTexture and (if a DOM target exists) display it
 
-        // Try to find histogram container, make it visible if found
-        const container = document.getElementById('histogram-container');
-        if (container) container.style.display = 'block';
+        // create a small offscreen canvas where each bin is one pixel
+        const off = document.createElement('canvas');
+        off.width = bins;
+        off.height = bins;
+        const octx = off.getContext('2d');
 
-        const trace = {
-            x: ndfX,
-            y: ndfY,
-            z: areaWeights, // same length as samples
-            type: 'histogram2d',
-            showscale: true,
-            colorbar: {
-                title: { text: 'Density', font: { color: 'white', size: 10 } },
-                tickfont: { color: 'white', size: 8 },
-                outlinecolor: 'white',
-                thickness: 10,
-                len: 0.7,
-            },
-            nbinsx: this.params.ndf.bins,
-            nbinsy: this.params.ndf.bins,
-            histfunc: 'sum', // sum area per bin
-            histnorm: 'probability density', // normalized density
-        };
+        // compute max for normalization
+        let maxVal = 0;
+        for (let i = 0; i < histogram.length; i++) {
+            if (histogram[i] > maxVal) maxVal = histogram[i];
+        }
+        if (maxVal === 0) maxVal = 1.0;
 
-        const layout = {
-            title: {
-                text: '2D NDF Density (X/Z plane)',
-                font: { color: 'white', size: 12 },
-            },
-            xaxis: {
-                title: { text: 'NDF X', font: { size: 10 } },
-                titlefont: { color: 'white', size: 10 },
-                tickfont: { color: 'white', size: 9 },
-                gridcolor: '#444',
-                zeroline: true,
-                zerolinecolor: 'white',
-                zerolinewidth: 1,
-                range: [-1, 1],
-            },
-            yaxis: {
-                title: { text: 'NDF Y (Z)', font: { size: 10 } },
-                titlefont: { color: 'white', size: 10 },
-                tickfont: { color: 'white', size: 9 },
-                gridcolor: '#444',
-                zeroline: true,
-                zerolinecolor: 'white',
-                zerolinewidth: 1,
-                range: [-1, 1],
-                scaleanchor: 'x', // lock aspect so the circle isn't squashed
-                scaleratio: 1,
-            },
-            paper_bgcolor: 'rgba(0,0,0,0)',
-            plot_bgcolor: 'rgba(0,0,0,0.8)',
-            font: { color: 'white', size: 10 },
-            margin: { l: 40, r: 60, t: 30, b: 40 },
-            autosize: true,
-        };
+        // draw pixels (flip Y so histogram[0] is bottom-left visually)
+        for (let by = 0; by < bins; by++) {
+            for (let bx = 0; bx < bins; bx++) {
+                const idx = by * bins + bx;
+                const v = histogram[idx];
+                let t = v / maxVal; // linear [0,1]
+                // apply mild log-like compression for better visual contrast
+                t = Math.log10(1 + 9 * t) / Math.log10(10);
+                // map to color: blue (low) -> cyan -> yellow -> red (high)
+                const hue = 240 * (1 - t); // 240 (blue) -> 0 (red)
+                const light = 30 + 50 * t; // darker low, brighter high
+                // CSS HSL works fine here
+                octx.fillStyle = `hsl(${hue}, 100%, ${light}%)`;
+                // pixel coordinates: y should be inverted so binY=0 is bottom
+                const py = bins - 1 - by;
+                octx.fillRect(bx, py, 1, 1);
+            }
+        }
 
-        const config = {
-            displayModeBar: false, // Hide the toolbar to save space
-            displaylogo: false,
-            responsive: true, // Make plot responsive
-            modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d'],
-        };
+        // create a display canvas scaled up for readability
+        const scale = 4; // change to taste
+        const displayW = bins * scale;
+        const displayH = bins * scale;
+        const displayCanvas = document.createElement('canvas');
+        displayCanvas.width = displayW;
+        displayCanvas.height = displayH;
+        const dctx = displayCanvas.getContext('2d');
+        // upscale using nearest neighbor so pixels stay crisp
+        dctx.imageSmoothingEnabled = false;
+        dctx.drawImage(off, 0, 0, displayW, displayH);
 
+        // keep references for later updates
+        this._ndfHistogramCanvas = displayCanvas;
+
+        // If there is a DOM element to show the histogram, put the canvas there
         const plotEl = document.getElementById('ndf-histogram');
-        if (!plotEl) return;
+        if (plotEl) {
+            // clear existing content and append the canvas
+            plotEl.innerHTML = '';
 
-        const data = [trace];
+            // ensure the container will let the canvas stretch to fill it
+            plotEl.style.display = 'flex';
+            plotEl.style.alignItems = 'stretch';
+            plotEl.style.justifyContent = 'stretch';
+            plotEl.style.padding = '0';
+            plotEl.style.margin = '0';
 
-        Plotly.newPlot(plotEl, data, layout, config).then(() => {
-            Plotly.Plots.resize(plotEl); // pass element, not string id
-        });
+            // make the canvas fill the container
+            displayCanvas.style.display = 'block';
+            displayCanvas.style.width = '100%';
+            displayCanvas.style.height = '100%';
+            displayCanvas.style.maxWidth = 'none';
+            displayCanvas.style.maxHeight = 'none';
+            displayCanvas.style.boxSizing = 'border-box';
+
+            plotEl.appendChild(displayCanvas);
+        }
     }
 
     getNDFData() {

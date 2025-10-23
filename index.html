@@ -162,12 +162,27 @@
                         </div>
                     </div>
                 </div>
-                <button
-                    id="applyHistogramTextureBtn"
-                    title="Apply histogram as texture to cube"
+                <div
+                    class="apply-texture-buttons"
+                    style="display: flex; gap: 8px; align-items: center"
                 >
-                    Apply Histogram Texture
-                </button>
+                    <button
+                        id="applyTexturePlaneBtn"
+                        class="applyHistogramTextureBtn"
+                        data-target="plane"
+                        title="Apply histogram as texture to plane"
+                    >
+                        Apply Texture to Plane
+                    </button>
+                    <button
+                        id="applyTextureCubeBtn"
+                        class="applyHistogramTextureBtn"
+                        data-target="cube"
+                        title="Apply histogram as texture to cube"
+                    >
+                        Apply Texture to Cube
+                    </button>
+                </div>
                 <div id="miniView">
                     <div
                         id="ndf-histogram"
@@ -306,6 +321,7 @@
             <div class="control-group">
                 <h3>Reset Controls</h3>
                 <button id="resetSceneBtn">Reset Scene</button>
+                <button id="resetTextureBtn">Reset Texture</button>
             </div>
         </div>
 
