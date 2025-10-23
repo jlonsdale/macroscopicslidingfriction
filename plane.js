@@ -3,33 +3,8 @@ class Plane {
         this.mesh = null;
         this.angle = angle; // degrees
         const geometry = new THREE.PlaneGeometry(50, 20);
-        const size = 512;
-        const squares = 32;
-        const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext('2d');
-        const squareSize = size / squares;
-
-        for (let y = 0; y < squares; y++) {
-            for (let x = 0; x < squares; x++) {
-                ctx.fillStyle = (x + y) % 2 === 0 ? '#9e93dbff' : '#3a3458ff';
-                ctx.fillRect(
-                    x * squareSize,
-                    y * squareSize,
-                    squareSize,
-                    squareSize
-                );
-            }
-        }
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(1, 1);
-
-        const material = new THREE.MeshBasicMaterial({
-            map: texture,
-            side: THREE.DoubleSide,
+        const material = new THREE.MeshLambertMaterial({
+            color: 0x708090, // grey-blue (slate gray)
         });
         this.mesh = new THREE.Mesh(geometry, material);
 

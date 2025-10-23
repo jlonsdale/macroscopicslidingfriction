@@ -87,7 +87,7 @@ class SceneRenderer {
         this.scene.add(ambientLight);
 
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(10, 10, 5);
+        directionalLight.position.set(0, 30, 0);
         directionalLight.castShadow = true;
         directionalLight.shadow.mapSize.width = 2048;
         directionalLight.shadow.mapSize.height = 2048;
@@ -369,21 +369,6 @@ function getTargetMeshes(target) {
         case 'plane':
             if (planeMesh) meshes.push(planeMesh);
             break;
-        case 'both':
-            if (cubeMesh) meshes.push(cubeMesh);
-            if (planeMesh) meshes.push(planeMesh);
-            break;
-        case 'all':
-            if (sceneRenderer && sceneRenderer.scene) {
-                sceneRenderer.scene.traverse(obj => {
-                    if (obj.isMesh) meshes.push(obj);
-                });
-            }
-            break;
-        default:
-            // allow custom names or fallback to cube
-            if (cubeMesh) meshes.push(cubeMesh);
-            break;
     }
     return meshes;
 }
@@ -588,33 +573,8 @@ function resetTextures() {
             if (sceneRenderer.plane && sceneRenderer.plane.mesh) {
                 const planeMaterial = sceneRenderer.plane.mesh.material;
                 if (planeMaterial) {
-                    // Recreate the original checkerboard texture
-                    const size = 512;
-                    const squares = 32;
-                    const canvas = document.createElement('canvas');
-                    canvas.width = size;
-                    canvas.height = size;
-                    const ctx = canvas.getContext('2d');
-                    const squareSize = size / squares;
-
-                    for (let y = 0; y < squares; y++) {
-                        for (let x = 0; x < squares; x++) {
-                            ctx.fillStyle =
-                                (x + y) % 2 === 0 ? '#9e93dbff' : '#3a3458ff';
-                            ctx.fillRect(
-                                x * squareSize,
-                                y * squareSize,
-                                squareSize,
-                                squareSize
-                            );
-                        }
-                    }
-                    const originalTexture = new THREE.CanvasTexture(canvas);
-                    originalTexture.wrapS = THREE.RepeatWrapping;
-                    originalTexture.wrapT = THREE.RepeatWrapping;
-                    originalTexture.repeat.set(1, 1);
-
-                    planeMaterial.map = originalTexture;
+                    planeMaterial.map = null;
+                    planeMaterial.color.setHex(0x708090); // Original plane color
                     planeMaterial.needsUpdate = true;
                 }
             }

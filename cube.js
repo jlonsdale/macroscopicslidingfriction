@@ -11,7 +11,6 @@ class Cube {
         const I = (this.mass * size * size) / 6.0;
         this.inertia = new THREE.Vector3(I, I, I);
 
-        // set this manually for now
         this.staticFriction = staticFriction; // static friction coefficient
         this.kineticFriction = kineticFriction; // kinetic friction coefficient
 
