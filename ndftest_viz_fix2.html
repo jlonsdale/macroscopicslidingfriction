@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Two Sine Surface NDFs</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 10px;
+                font-family: Arial;
+                background: #1a1a1a;
+                color: white;
+                font-size: 12px;
+            }
+            .container {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                height: 60vh;
+                max-width: 1000px;
+                margin: 0 auto;
+            }
+            .panel {
+                display: flex;
+                flex-direction: column;
+                border: 1px solid #333;
+                border-radius: 4px;
+                padding: 6px;
+                background: #0b0d10;
+            }
+            .title {
+                font-size: 12px;
+                font-weight: bold;
+                margin-bottom: 6px;
+                text-align: center;
+                color: #00bfff;
+            }
+            .controls {
+                margin-bottom: 6px;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 1fr 1fr 1fr;
+                gap: 3px;
+            }
+            .control {
+                display: flex;
+                align-items: center;
+                gap: 3px;
+            }
+            .control label {
+                width: 40px;
+                font-size: 9px;
+            }
+            .control input {
+                flex: 1;
+                background: #333;
+                border: 1px solid #555;
+                color: white;
+                padding: 1px;
+                border-radius: 2px;
+                height: 16px;
+            }
+            .control span {
+                width: 25px;
+                font-size: 9px;
+            }
+            .display-area {
+                display: flex;
+                gap: 6px;
+                flex: 1;
+                align-items: center;
+                justify-content: center;
+                min-height: 0;
+            }
+            .surface {
+                flex: 0 0 auto;
+                border: 1px solid #555;
+                border-radius: 2px;
+                overflow: hidden;
+                aspect-ratio: 1;
+                width: calc(50% - 3px);
+                height: auto;
+            }
+            .histogram {
+                flex: 0 0 auto;
+                border: 1px solid #555;
+                border-radius: 2px;
+                background: #000;
+                aspect-ratio: 1;
+                width: calc(50% - 3px);
+                height: auto;
+            }
+            .velocity-display {
+                margin-top: 10px;
+                padding: 8px;
+                background: #2a2a2a;
+                border: 1px solid #555;
+                border-radius: 4px;
+                text-align: center;
+                font-size: 11px;
+                color: #00ff00;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="panel">
+                <div class="title">Surface 1</div>
+                <div class="controls">
+                    <div class="control">
+                        <label>Amp:</label>
+                        <input
+                            type="range"
+                            id="a1"
+                            min="0.1"
+                            max="5"
+                            step="0.1"
+                            value="1.5"
+                        />
+                        <span id="a1v">1.5</span>
+                    </div>
+                    <div class="control">
+                        <label>Wave:</label>
+                        <input
+                            type="range"
+                            id="w1"
+                            min="5"
+                            max="50"
+                            step="1"
+                            value="20"
+                        />
+                        <span id="w1v">20</span>
+                    </div>
+                    <div class="control">
+                        <label>Phase:</label>
+                        <input
+                            type="range"
+                            id="p1"
+                            min="0"
+                            max="6.28"
+                            step="0.1"
+                            value="0"
+                        />
+                        <span id="p1v">0</span>
+                    </div>
+                    <div class="control">
+                        <label>Rough:</label>
+                        <input
+                            type="range"
+                            id="r1"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value="0.2"
+                        />
+                        <span id="r1v">0.2</span>
+                    </div>
+                    <div class="control">
+                        <label>Rotate:</label>
+                        <input
+                            type="range"
+                            id="rot1"
+                            min="0"
+                            max="6.28"
+                            step="0.1"
+                            value="0"
+                        />
+                        <span id="rot1v">0</span>
+                    </div>
+                </div>
+                <div class="display-area">
+                    <div class="surface" id="s1"></div>
+                    <div class="histogram" id="h1"></div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="title">Surface 2</div>
+                <div class="controls">
+                    <div class="control">
+                        <label>Amp:</label>
+                        <input
+                            type="range"
+                            id="a2"
+                            min="0.1"
+                            max="5"
+                            step="0.1"
+                            value="2"
+                        />
+                        <span id="a2v">2</span>
+                    </div>
+                    <div class="control">
+                        <label>Wave:</label>
+                        <input
+                            type="range"
+                            id="w2"
+                            min="5"
+                            max="50"
+                            step="1"
+                            value="12"
+                        />
+                        <span id="w2v">12</span>
+                    </div>
+                    <div class="control">
+                        <label>Phase:</label>
+                        <input
+                            type="range"
+                            id="p2"
+                            min="0"
+                            max="6.28"
+                            step="0.1"
+                            value="1.57"
+                        />
+                        <span id="p2v">1.57</span>
+                    </div>
+                    <div class="control">
+                        <label>Rough:</label>
+                        <input
+                            type="range"
+                            id="r2"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value="0.4"
+                        />
+                        <span id="r2v">0.4</span>
+                    </div>
+                    <div class="control">
+                        <label>Rotate:</label>
+                        <input
+                            type="range"
+                            id="rot2"
+                            min="0"
+                            max="6.28"
+                            step="0.1"
+                            value="0"
+                        />
+                        <span id="rot2v">0</span>
+                    </div>
+                </div>
+                <div class="display-area">
+                    <div class="surface" id="s2"></div>
+                    <div class="histogram" id="h2"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="velocity-display" style="margin-top: 8px">
+            <label style="display: flex; gap: 8px; align-items: center"
+                ><input type="checkbox" id="oppNormals" checked /><span
+                    >Opposite macronormals (flip surface 2 by 180°)</span
+                ></label
+            >
+
+            <div
+                style="
+                    display: flex;
+                    gap: 12px;
+                    align-items: center;
+                    margin-top: 8px;
+                    font-size: 11px;
+                "
+            >
+                <label style="display: flex; gap: 4px; align-items: center">
+                    Initial Velocity X:
+                    <input
+                        type="number"
+                        id="initialVelX"
+                        value="0"
+                        step="0.001"
+                        style="
+                            width: 80px;
+                            background: #333;
+                            border: 1px solid #555;
+                            color: white;
+                            padding: 2px;
+                            border-radius: 2px;
+                        "
+                    />
+                    <span style="color: #888">m/s</span>
+                </label>
+                <label style="display: flex; gap: 4px; align-items: center">
+                    Initial Velocity Y:
+                    <input
+                        type="number"
+                        id="initialVelY"
+                        value="0"
+                        step="0.001"
+                        style="
+                            width: 80px;
+                            background: #333;
+                            border: 1px solid #555;
+                            color: white;
+                            padding: 2px;
+                            border-radius: 2px;
+                        "
+                    />
+                    <span style="color: #888">m/s</span>
+                </label>
+                <button
+                    id="resetVelocity"
+                    style="
+                        background: #666;
+                        color: white;
+                        border: none;
+                        padding: 4px 8px;
+                        border-radius: 2px;
+                        cursor: pointer;
+                        font-size: 10px;
+                    "
+                >
+                    Reset
+                </button>
+            </div>
+        </div>
+
+        <div class="velocity-display" id="velocityDisplay">
+            <div
+                style="
+                    display: flex;
+                    gap: 12px;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    margin-top: 8px;
+                "
+            >
+                <canvas
+                    id="velCanvas"
+                    width="220"
+                    height="220"
+                    style="
+                        background: #111;
+                        border: 1px solid #444;
+                        border-radius: 4px;
+                    "
+                ></canvas>
+                <div style="font-size: 11px; line-height: 1.4; opacity: 0.9">
+                    <div><b>Vector visualizer</b></div>
+                    <div>
+                        Arrow shows instantaneous sliding velocity in the chosen
+                        meter-frame.
+                    </div>
+                    <div>
+                        Trail shows recent history (fades over time). Axes: +x →
+                        right, +y ↑ up.
+                    </div>
+                    <div
+                        id="velScaleLabel"
+                        style="opacity: 0.8; margin-top: 6px"
+                    >
+                        Scale auto-adjusts
+                    </div>
+                </div>
+            </div>
+
+            Sliding Velocity: <span id="velocityValue">0.000000</span> m/s
+            &nbsp;|&nbsp; Overlap X:
+            <span id="overlapX">0.000</span> &nbsp;|&nbsp; Y:
+            <span id="overlapY">0.000</span> &nbsp;|&nbsp; Mean:
+            <span id="overlapMean">0.000</span>
+        </div>
+
+        <div style="text-align: center; margin-top: 10px">
+            <button
+                id="incrementButton"
+                style="
+                    background: #0066cc;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: bold;
+                "
+            >
+                Increment Timestep
+            </button>
+        </div>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+        <script src="surface_visualizer.js"></script>
+        <script type="module">
+            // ES6 Module-style organization
+            class SurfaceController {
+                constructor() {
+                    this.surfaces = new Map();
+                    this.init();
+                }
+
+                async init() {
+                    await this.loadSurfaces();
+                    this.setupEventListeners();
+                    this.initialUpdate();
+                }
+
+                async loadSurfaces() {
+                    const surfaceConfigs = [
+                        {
+                            id: 's1',
+                            histogramId: 'h1',
+                            config: {
+                                sine: {
+                                    amplitude: 1.5,
+                                    wavelengthX: 20,
+                                    phaseX: 0,
+                                    roughness: 0.2,
+                                    roughnessScale: 50,
+                                },
+                            },
+                        },
+                        {
+                            id: 's2',
+                            histogramId: 'h2',
+                            config: {
+                                sine: {
+                                    amplitude: 2,
+                                    wavelengthX: 12,
+                                    phaseX: 1.57,
+                                    roughness: 0.4,
+                                    roughnessScale: 50,
+                                },
+                            },
+                        },
+                    ];
+
+                    for (const { id, histogramId, config } of surfaceConfigs) {
+                        const surface = new ModernSurfaceVisualizer(id, config);
+                        this.surfaces.set(id, { surface, histogramId });
+                    }
+                }
+
+                setupEventListeners() {
+                    // Control mappings using ES6 Map
+                    const controlMappings = new Map([
+                        [
+                            'a1',
+                            {
+                                surface: 's1',
+                                property: 'amplitude',
+                                formatter: v => v.toString(),
+                            },
+                        ],
+                        [
+                            'w1',
+                            {
+                                surface: 's1',
+                                property: 'wavelengthX',
+                                formatter: v => v.toString(),
+                            },
+                        ],
+                        [
+                            'p1',
+                            {
+                                surface: 's1',
+                                property: 'phaseX',
+                                formatter: v => v.toFixed(2),
+                            },
+                        ],
+                        [
+                            'r1',
+                            {
+                                surface: 's1',
+                                property: 'roughness',
+                                formatter: v => v.toFixed(2),
+                            },
+                        ],
+                        [
+                            'a2',
+                            {
+                                surface: 's2',
+                                property: 'amplitude',
+                                formatter: v => v.toString(),
+                            },
+                        ],
+                        [
+                            'w2',
+                            {
+                                surface: 's2',
+                                property: 'wavelengthX',
+                                formatter: v => v.toString(),
+                            },
+                        ],
+                        [
+                            'p2',
+                            {
+                                surface: 's2',
+                                property: 'phaseX',
+                                formatter: v => v.toFixed(2),
+                            },
+                        ],
+                        [
+                            'r2',
+                            {
+                                surface: 's2',
+                                property: 'roughness',
+                                formatter: v => v.toFixed(2),
+                            },
+                        ],
+                    ]);
+
+                    // Rotation mappings
+                    const rotationMappings = new Map([
+                        ['rot1', 's1'],
+                        ['rot2', 's2'],
+                    ]);
+
+                    // Bind standard controls using modern event handling
+                    for (const [
+                        controlId,
+                        { surface: surfaceId, property, formatter },
+                    ] of controlMappings) {
+                        this.bindControl(
+                            controlId,
+                            surfaceId,
+                            property,
+                            formatter
+                        );
+                    }
+
+                    // Bind rotation controls
+                    for (const [controlId, surfaceId] of rotationMappings) {
+                        this.bindRotationControl(controlId, surfaceId);
+                    }
+                }
+
+                bindControl(
+                    controlId,
+                    surfaceId,
+                    property,
+                    formatter = v => v
+                ) {
+                    const element = document.getElementById(controlId);
+                    const valueDisplay = document.getElementById(
+                        `${controlId}v`
+                    );
+                    const { surface, histogramId } =
+                        this.surfaces.get(surfaceId);
+
+                    element?.addEventListener(
+                        'input',
+                        ({ target: { value } }) => {
+                            const numValue = parseFloat(value);
+                            surface.updateProperty(property, numValue);
+                            valueDisplay.textContent = formatter(numValue);
+                            surface.update(histogramId);
+                        }
+                    );
+                }
+
+                bindRotationControl(controlId, surfaceId) {
+                    const element = document.getElementById(controlId);
+                    const valueDisplay = document.getElementById(
+                        `${controlId}v`
+                    );
+                    const { surface } = this.surfaces.get(surfaceId);
+
+                    element?.addEventListener(
+                        'input',
+                        ({ target: { value } }) => {
+                            const angle = parseFloat(value);
+                            valueDisplay.textContent = angle.toFixed(2);
+                            surface.rotate(angle);
+                        }
+                    );
+                }
+
+                async initialUpdate() {
+                    // Wait a bit for DOM to be ready, then update all histograms
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    for (const [, { surface, histogramId }] of this.surfaces) {
+                        surface.update(histogramId);
+                    }
+
+                    // Initialize velocity tracking with user-specified values
+                    this.resetToInitialVelocity();
+
+                    // Setup manual timestep control
+                    this.setupTimestepControl();
+                }
+
+                resetToInitialVelocity() {
+                    const initialVelX =
+                        parseFloat(
+                            document.getElementById('initialVelX').value
+                        ) || 0;
+                    const initialVelY =
+                        parseFloat(
+                            document.getElementById('initialVelY').value
+                        ) || 0;
+                    this.previousVelocity = { x: initialVelX, y: initialVelY };
+
+                    // Update the display immediately
+                    this.updateVelocityDisplay(this.previousVelocity);
+                }
+
+                updateVelocityDisplay(velocityVector) {
+                    // Calculate magnitude for display
+                    const velocityMagnitude = Math.sqrt(
+                        velocityVector.x * velocityVector.x +
+                            velocityVector.y * velocityVector.y
+                    );
+
+                    // Update UI display
+                    const velocityValueElement =
+                        document.getElementById('velocityValue');
+                    if (velocityValueElement) {
+                        velocityValueElement.textContent = `${velocityMagnitude.toFixed(
+                            6
+                        )} (x:${velocityVector.x.toFixed(
+                            4
+                        )}, y:${velocityVector.y.toFixed(4)})`;
+
+                        const ox = document.getElementById('overlapX');
+                        const oy = document.getElementById('overlapY');
+                        const om = document.getElementById('overlapMean');
+                        if (ox)
+                            ox.textContent = (
+                                velocityVector._overlapX ?? 0
+                            ).toFixed(3);
+                        if (oy)
+                            oy.textContent = (
+                                velocityVector._overlapY ?? 0
+                            ).toFixed(3);
+                        if (om)
+                            om.textContent = (
+                                velocityVector._overlapMean ?? 0
+                            ).toFixed(3);
+                    }
+
+                    // Update velocity visualization
+                    velViz.draw(velocityVector.x, velocityVector.y);
+
+                    // Log significant velocities to console
+                    if (velocityMagnitude > 0.0001) {
+                        console.log(
+                            `Sliding velocity: ${velocityMagnitude.toFixed(
+                                6
+                            )} m/s, vector: (${velocityVector.x.toFixed(
+                                6
+                            )}, ${velocityVector.y.toFixed(6)})`
+                        );
+                    }
+                }
+
+                calculateAndDisplayVelocity() {
+                    const surface1 = this.surfaces.get('s1')?.surface;
+                    const surface2 = this.surfaces.get('s2')?.surface;
+
+                    if (surface1?.lastHist && surface2?.lastHist) {
+                        const velocityVector = calcVelocity(
+                            this.previousVelocity,
+                            surface1.lastHist,
+                            surface2.lastHist
+                        );
+
+                        this.previousVelocity = velocityVector;
+                        this.updateVelocityDisplay(velocityVector);
+                    }
+                }
+
+                startVelocityCalculations() {
+                    // This method is no longer used - velocity calculations are now manual
+                    console.log(
+                        'startVelocityCalculations called but animation is disabled'
+                    );
+                }
+
+                setupTimestepControl() {
+                    const incrementButton =
+                        document.getElementById('incrementButton');
+                    const resetButton =
+                        document.getElementById('resetVelocity');
+                    const initialVelXInput =
+                        document.getElementById('initialVelX');
+                    const initialVelYInput =
+                        document.getElementById('initialVelY');
+
+                    incrementButton.addEventListener('click', () => {
+                        this.calculateAndDisplayVelocity();
+                    });
+
+                    resetButton.addEventListener('click', () => {
+                        this.resetToInitialVelocity();
+                    });
+
+                    // Update initial velocity when inputs change
+                    [initialVelXInput, initialVelYInput].forEach(input => {
+                        input.addEventListener('input', () => {
+                            if (
+                                confirm('Reset velocity to new initial values?')
+                            ) {
+                                this.resetToInitialVelocity();
+                            }
+                        });
+                    });
+                }
+            }
+
+            // Modern ES6 Surface Visualizer extending the original
+            class ModernSurfaceVisualizer extends SurfaceVisualizer {
+                constructor(id, params = {}) {
+                    super(false);
+
+                    this.id = id;
+                    this.currentRotation = 0;
+
+                    // Use object spread and destructuring
+                    this.params = {
+                        ...this.params,
+                        L: 40,
+                        resolution: 64,
+                        wireframe: true,
+                        render: true,
+                        surfaceType: 'Sine',
+                        ...params,
+                    };
+
+                    this.params.sine = { ...this.params.sine, ...params.sine };
+
+                    this.setupRenderer();
+                    this.repaint();
+                }
+
+                setupRenderer() {
+                    const container = document.getElementById(this.id);
+                    if (!container) {
+                        console.error(
+                            `Container with id '${this.id}' not found`
+                        );
+                        return;
+                    }
+
+                    const { width, height } = container.getBoundingClientRect();
+
+                    // Configure renderer
+                    this.renderer.setSize(width, height);
+                    container.appendChild(this.renderer.domElement);
+
+                    // Setup camera with cleaner syntax
+                    this.camera = new THREE.PerspectiveCamera(
+                        55,
+                        width / height,
+                        0.1,
+                        200
+                    );
+                    this.camera.position.set(30, 15, 30);
+                    this.camera.lookAt(0, 0, 0);
+
+                    // Add lighting using modern array methods
+                    const lights = [
+                        new THREE.HemisphereLight(0xffffff, 0x333333, 0.9),
+                        (() => {
+                            const light = new THREE.DirectionalLight(
+                                0xffffff,
+                                1
+                            );
+                            light.position.set(15, 20, 10);
+                            return light;
+                        })(),
+                    ];
+
+                    lights.forEach(light => this.scene.add(light));
+                    this.scene.background = new THREE.Color(0x0b0d10);
+
+                    this.startAnimation();
+                }
+
+                startAnimation() {
+                    const animate = () => {
+                        requestAnimationFrame(animate);
+                        this.renderer.render(this.scene, this.camera);
+                    };
+                    animate();
+                }
+
+                updateProperty(property, value) {
+                    // Use modern object property access
+                    if (this.params.sine.hasOwnProperty(property)) {
+                        this.params.sine[property] = value;
+                    }
+                }
+
+                update(histogramId) {
+                    this.updateSineAndHistogram();
+                    this.createNDFHistogram(histogramId);
+
+                    // Store histogram data for velocity calculations
+                    this.storeHistogramData();
+                }
+
+                storeHistogramData() {
+                    const { ndfSamples, areaWeights } = this.areaWeightedNDF();
+                    const bins = this.params.ndf.bins;
+                    const histogram = new Array(bins * bins).fill(0);
+                    const binSize = 2.0 / bins;
+
+                    for (let i = 0; i < ndfSamples.length; i++) {
+                        const sample = ndfSamples[i];
+                        const weight = areaWeights[i];
+                        const nx = sample.x;
+                        const ny = sample.y;
+                        const binX = Math.floor((nx + 1.0) / binSize);
+                        const binY = Math.floor((ny + 1.0) / binSize);
+                        if (
+                            binX >= 0 &&
+                            binX < bins &&
+                            binY >= 0 &&
+                            binY < bins
+                        ) {
+                            histogram[binY * bins + binX] += weight;
+                        }
+                    }
+
+                    // Store the histogram data for velocity calculations
+                    this.lastHist = {
+                        hist: histogram,
+                        bins: bins,
+                        phiDeg: (this.currentRotation * 180) / Math.PI,
+                        dtSeconds: 0.016, // ~60fps
+                        metersPerTangentUnit: 0.001, // 1mm per unit
+                    };
+                }
+
+                rotate(angle) {
+                    if (!this.mesh) return;
+
+                    // Reset and apply rotation using modern syntax
+                    const deltaRotation = -this.currentRotation;
+                    this.geo.rotateY(deltaRotation);
+                    this.geo.rotateY(angle);
+                    this.currentRotation = angle;
+
+                    // Update geometry state
+                    this.geo.computeVertexNormals();
+                    Object.assign(this.geo, {
+                        normalsNeedUpdate: true,
+                        'attributes.position.needsUpdate': true,
+                    });
+
+                    this.createNDFHistogram(this.id.replace('s', 'h'));
+
+                    // Update stored histogram data after rotation
+                    this.storeHistogramData();
+                }
+            }
+
+            // Return a velocity VECTOR in m/s (in the local meter-frame you choose).
+            // v1 can be {x,y} from the previous step (for smoothing). If v1 is a number, it's treated as {x:v1, y:0}.
+            const calcVelocity = (v1, ndfdata1, ndfdata2) => {
+                // ----- tiny helpers -----
+                const toVec = v =>
+                    v && typeof v === 'object'
+                        ? { x: +v.x || 0, y: +v.y || 0 }
+                        : { x: +v || 0, y: 0 };
+
+                const rotate2 = ([x, y], ang) => {
+                    const c = Math.cos(ang),
+                        s = Math.sin(ang);
+                    return [c * x - s * y, s * x + c * y];
+                };
+                const motionBasis = phi => {
+                    const v = [Math.cos(phi), Math.sin(phi)];
+                    const vp = [-Math.sin(phi), Math.cos(phi)];
+                    return { v, vp };
+                };
+                const normToGrid = (x, y, bins) => [
+                    (x + 1) * 0.5 * bins - 0.5,
+                    (y + 1) * 0.5 * bins - 0.5,
+                ];
+                const bilinearSample = (hist, bins, u, v) => {
+                    const x0 = Math.floor(u),
+                        y0 = Math.floor(v),
+                        tx = u - x0,
+                        ty = v - y0,
+                        x1 = x0 + 1,
+                        y1 = y0 + 1;
+                    const get = (px, py) =>
+                        px < 0 || py < 0 || px >= bins || py >= bins
+                            ? 0
+                            : hist[py * bins + px] || 0;
+                    const c00 = get(x0, y0),
+                        c10 = get(x1, y0),
+                        c01 = get(x0, y1),
+                        c11 = get(x1, y1);
+                    const c0 = c00 * (1 - tx) + c10 * tx,
+                        c1 = c01 * (1 - tx) + c11 * tx;
+                    return c0 * (1 - ty) + c1 * ty;
+                };
+                const normalizeProfile = (xs, ys) => {
+                    if (ys.length <= 1) return { xs, ys };
+                    const dx = xs[1] - xs[0];
+                    const area = ys.reduce((s, v) => s + v, 0) * dx || 1;
+                    return { xs, ys: ys.map(y => y / area) };
+                };
+
+                // Project a 2D histogram along φ by integrating along φ⊥
+                const projectHistogram1D = ({
+                    hist,
+                    bins,
+                    phiDeg = 0,
+                    thetaDeg = 0,
+                    alphaSamples = 601,
+                    betaSamples = 401,
+                    alphaExtent = 1.5,
+                }) => {
+                    const phi = (phiDeg * Math.PI) / 180,
+                        theta = (thetaDeg * Math.PI) / 180;
+                    const { v, vp } = motionBasis(phi);
+                    const betaExtent = 1.5; // enough to cover [-1,1]^2 after rotation
+                    const aMin = -alphaExtent,
+                        aMax = +alphaExtent,
+                        bMin = -betaExtent,
+                        bMax = +betaExtent;
+                    const as = new Array(alphaSamples),
+                        ps = new Array(alphaSamples).fill(0);
+                    for (let ia = 0; ia < alphaSamples; ia++) {
+                        const a =
+                            aMin + (aMax - aMin) * (ia / (alphaSamples - 1));
+                        as[ia] = a;
+                        let acc = 0;
+                        for (let ib = 0; ib < betaSamples; ib++) {
+                            const b =
+                                bMin + (bMax - bMin) * (ib / (betaSamples - 1));
+                            let x = a * v[0] + b * vp[0],
+                                y = a * v[1] + b * vp[1];
+                            if (theta !== 0) [x, y] = rotate2([x, y], theta);
+                            const [u, w] = normToGrid(x, y, bins);
+                            acc += bilinearSample(hist, bins, u, w);
+                        }
+                        acc *= (bMax - bMin) / (betaSamples - 1); // Δβ
+                        ps[ia] = acc;
+                    }
+                    return normalizeProfile(as, ps);
+                };
+
+                const crossCorrelate1D = (
+                    alpha,
+                    p1,
+                    p2,
+                    tauSamples = 801,
+                    tauExtent = 1.5
+                ) => {
+                    const dA = alpha.length > 1 ? alpha[1] - alpha[0] : 1;
+                    const tMin = -tauExtent,
+                        tMax = +tauExtent;
+                    const tau = new Array(tauSamples),
+                        g = new Array(tauSamples).fill(0);
+                    const sampleP2 = x => {
+                        const idx = (x - alpha[0]) / dA,
+                            i0 = Math.floor(idx),
+                            t = idx - i0;
+                        const val = i => (i < 0 || i >= p2.length ? 0 : p2[i]);
+                        return val(i0) * (1 - t) + val(i0 + 1) * t;
+                    };
+                    for (let k = 0; k < tauSamples; k++) {
+                        const t = tMin + (tMax - tMin) * (k / (tauSamples - 1));
+                        tau[k] = t;
+                        let acc = 0;
+                        for (let i = 0; i < alpha.length; i++)
+                            acc += p1[i] * sampleP2(alpha[i] - t);
+                        g[k] = acc * dA;
+                    }
+                    // normalize area of g to 1 for stable peak estimation
+                    const dt = tau.length > 1 ? tau[1] - tau[0] : 1;
+                    const area = g.reduce((s, v) => s + v, 0) * dt || 1;
+                    for (let i = 0; i < g.length; i++) g[i] /= area;
+                    return { tau, g };
+                };
+
+                const quadraticPeak = (xs, ys, k) => {
+                    if (k <= 0 || k >= ys.length - 1)
+                        return { x: xs[k], y: ys[k] };
+                    const x1 = xs[k - 1],
+                        x2 = xs[k],
+                        x3 = xs[k + 1],
+                        y1 = ys[k - 1],
+                        y2 = ys[k],
+                        y3 = ys[k + 1];
+                    const denom = y1 - 2 * y2 + y3;
+                    if (!isFinite(denom) || Math.abs(denom) < 1e-12)
+                        return { x: x2, y: y2 };
+                    const dx = (0.5 * (y1 - y3)) / denom; // index units
+                    const xv = x2 + dx * (x2 - x1); // convert to τ units
+                    return { x: xv, y: NaN };
+                };
+
+                // ----- inputs & params -----
+                const prevV = toVec(v1);
+
+                const hist1 =
+                    (ndfdata1 && (ndfdata1.hist || ndfdata1.histogram)) || [];
+                const hist2 =
+                    (ndfdata2 && (ndfdata2.hist || ndfdata2.histogram)) || [];
+                const bins1 =
+                    (ndfdata1 && ndfdata1.bins) ||
+                    (ndfdata2 && ndfdata2.bins) ||
+                    128;
+                const bins2 = (ndfdata2 && ndfdata2.bins) || bins1;
+                const bins = Math.min(bins1, bins2);
+
+                // numeric knobs
+                const alphaExtent = (ndfdata1 && ndfdata1.alphaExtent) ?? 1.5;
+                const betaSamples = (ndfdata1 && ndfdata1.betaSamples) ?? 401;
+                const tauExtent = (ndfdata1 && ndfdata1.tauExtent) ?? 1.5;
+                const dtSeconds =
+                    (ndfdata2 && ndfdata2.dtSeconds) ??
+                    (ndfdata1 && ndfdata1.dtSeconds) ??
+                    1 / 60;
+                const smoothing = (ndfdata1 && ndfdata1.smoothing) ?? 0.5;
+
+                // anisotropy alignment for the second NDF (optional)
+                let thetaDeg = 0;
+                if (
+                    ndfdata1 &&
+                    ndfdata2 &&
+                    Number.isFinite(ndfdata1.phiDeg) &&
+                    Number.isFinite(ndfdata2.phiDeg)
+                ) {
+                    thetaDeg = ndfdata2.phiDeg - ndfdata1.phiDeg;
+                }
+                // Optional: flip by 180° if opposite macronormals checkbox is on
+                try {
+                    const opp = document.getElementById('oppNormals')?.checked;
+                    if (opp) thetaDeg += 180;
+                } catch (e) {}
+
+                // scaling: either isotropic scalar or 2x2 Jacobian (tangent -> meters)
+                const scale =
+                    (ndfdata1 && ndfdata1.metersPerTangentUnit) ??
+                    (ndfdata2 && ndfdata2.metersPerTangentUnit) ??
+                    0.002; // isotropic by default
+                const J =
+                    (ndfdata1 && ndfdata1.tangentToMeter) ||
+                    (ndfdata2 && ndfdata2.tangentToMeter) ||
+                    null;
+                // J should be {m00,m01,m10,m11} mapping [dx,dy]_tangent -> [mx,my]_meters
+
+                if (!hist1.length || !hist2.length || bins < 8) return prevV;
+
+                // ----- estimate displacement along +x (φ=0°) -----
+                const ax = projectHistogram1D({
+                    hist: hist1,
+                    bins,
+                    phiDeg: 0,
+                    thetaDeg: 0,
+                    alphaSamples: 601,
+                    betaSamples,
+                    alphaExtent,
+                });
+                const bx = projectHistogram1D({
+                    hist: hist2,
+                    bins,
+                    phiDeg: 0,
+                    thetaDeg: thetaDeg,
+                    alphaSamples: 601,
+                    betaSamples,
+                    alphaExtent,
+                });
+                const cx = crossCorrelate1D(
+                    ax.xs,
+                    ax.ys,
+                    bx.ys,
+                    801,
+                    tauExtent
+                );
+                let kx = 0,
+                    peakx = -Infinity;
+                for (let i = 0; i < cx.g.length; i++)
+                    if (cx.g[i] > peakx) {
+                        peakx = cx.g[i];
+                        kx = i;
+                    }
+                let tauX = cx.tau[kx];
+                const refx = quadraticPeak(cx.tau, cx.g, kx);
+                if (isFinite(refx.x)) tauX = refx.x;
+                const confX =
+                    Math.max(
+                        0,
+                        peakx -
+                            0.5 *
+                                (cx.g[Math.max(0, kx - 1)] +
+                                    cx.g[Math.min(cx.g.length - 1, kx + 1)])
+                    ) /
+                    (peakx + 1e-9);
+
+                // ----- estimate displacement along +y (φ=90°) -----
+                const ay = projectHistogram1D({
+                    hist: hist1,
+                    bins,
+                    phiDeg: 90,
+                    thetaDeg: 0,
+                    alphaSamples: 601,
+                    betaSamples,
+                    alphaExtent,
+                });
+                const by = projectHistogram1D({
+                    hist: hist2,
+                    bins,
+                    phiDeg: 90,
+                    thetaDeg: thetaDeg,
+                    alphaSamples: 601,
+                    betaSamples,
+                    alphaExtent,
+                });
+                const cy = crossCorrelate1D(
+                    ay.xs,
+                    ay.ys,
+                    by.ys,
+                    801,
+                    tauExtent
+                );
+                let ky = 0,
+                    peaky = -Infinity;
+                for (let i = 0; i < cy.g.length; i++)
+                    if (cy.g[i] > peaky) {
+                        peaky = cy.g[i];
+                        ky = i;
+                    }
+                let tauY = cy.tau[ky];
+                const refy = quadraticPeak(cy.tau, cy.g, ky);
+                if (isFinite(refy.x)) tauY = refy.x;
+                const confY =
+                    Math.max(
+                        0,
+                        peaky -
+                            0.5 *
+                                (cy.g[Math.max(0, ky - 1)] +
+                                    cy.g[Math.min(cy.g.length - 1, ky + 1)])
+                    ) /
+                    (peaky + 1e-9);
+
+                // ----- tangent displacement vector (units of tangent space) -----
+                const dT = { x: tauX, y: tauY };
+
+                // ----- convert to meters -----
+                let dM; // displacement in meters
+                if (
+                    J &&
+                    Number.isFinite(J.m00) &&
+                    Number.isFinite(J.m01) &&
+                    Number.isFinite(J.m10) &&
+                    Number.isFinite(J.m11)
+                ) {
+                    dM = {
+                        x: J.m00 * dT.x + J.m01 * dT.y,
+                        y: J.m10 * dT.x + J.m11 * dT.y,
+                    };
+                } else {
+                    // isotropic scale
+                    dM = { x: dT.x * scale, y: dT.y * scale };
+                }
+
+                // ----- velocity vector (m/s) -----
+                const dt = Math.max(1e-6, dtSeconds);
+                const v_est = { x: dM.x / dt, y: dM.y / dt };
+
+                // ----- confidence-weighted EWMA smoothing -----
+                const conf = Math.max(0, Math.min(1, Math.min(confX, confY))); // conservative
+                const a = Math.min(1, Math.max(0, smoothing * conf));
+                const v1new = {
+                    x: (1 - a) * prevV.x + a * v_est.x,
+                    y: (1 - a) * prevV.y + a * v_est.y,
+                };
+
+                return {
+                    ...v1new,
+                    _overlapX: peakx,
+                    _overlapY: peaky,
+                    _overlapMean: (peakx + peaky) * 0.5,
+                };
+            };
+
+            // Initialize application when DOM is loaded
+
+            // --- Velocity visualization (arrow + fading trail) ---
+            const velViz = (() => {
+                const canvas = () => document.getElementById('velCanvas');
+                const scaleLabel = () =>
+                    document.getElementById('velScaleLabel');
+                const history = [];
+                const maxHistory = 120; // ~2s at 60fps
+                let autoScale = 0.25; // meters/s per 80 pixels (initial guess)
+                let smoothMax = 0.01; // EWMA of recent max magnitude
+
+                const draw = (vx, vy) => {
+                    const c = canvas();
+                    if (!c) return;
+                    const ctx = c.getContext('2d');
+                    const w = c.width,
+                        h = c.height;
+                    const cx = w / 2,
+                        cy = h / 2;
+
+                    // Update history
+                    const mag = Math.hypot(vx, vy);
+                    smoothMax =
+                        0.95 * smoothMax +
+                        0.05 * Math.max(smoothMax, mag, 1e-6);
+                    history.push({ vx, vy, t: performance.now() });
+                    if (history.length > maxHistory) history.shift();
+
+                    // Auto scaling: fit ~80 px for 0.25 * smoothMax (keeps arrow visible)
+                    const target = Math.max(smoothMax, 1e-6);
+                    const pxPerMS = 80 / (target + 1e-6);
+
+                    // Clear
+                    ctx.clearRect(0, 0, w, h);
+
+                    // Grid + axes
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                    ctx.lineWidth = 1;
+                    // Axes
+                    ctx.beginPath();
+                    ctx.moveTo(-cx + 6, 0);
+                    ctx.lineTo(cx - 6, 0);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(0, cy - 6);
+                    ctx.lineTo(0, -cy + 6);
+                    ctx.stroke();
+
+                    // Trail
+                    for (let i = 1; i < history.length; i++) {
+                        const a = history[i - 1],
+                            b = history[i];
+                        const age = (performance.now() - b.t) / 1000; // seconds
+                        const alpha = Math.max(0, 0.9 - age * 0.6);
+                        if (alpha <= 0) continue;
+                        ctx.strokeStyle = `rgba(180,180,255,${alpha})`;
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(a.vx * pxPerMS, -a.vy * pxPerMS);
+                        ctx.lineTo(b.vx * pxPerMS, -b.vy * pxPerMS);
+                        ctx.stroke();
+                    }
+
+                    // Arrow (current)
+                    const x = vx * pxPerMS,
+                        y = -vy * pxPerMS;
+                    const len = Math.hypot(x, y);
+                    if (len > 1e-6) {
+                        const nx = x / len,
+                            ny = y / len;
+                        const head = 8,
+                            back = 14;
+                        ctx.strokeStyle = 'rgba(120,220,255,1)';
+                        ctx.fillStyle = 'rgba(120,220,255,1)';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(0, 0);
+                        ctx.lineTo(x, y);
+                        ctx.stroke();
+                        // Arrowhead
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(
+                            x - nx * back - ny * head,
+                            y - ny * back + nx * head
+                        );
+                        ctx.lineTo(
+                            x - nx * back + ny * head,
+                            y - ny * back - nx * head
+                        );
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+
+                    // Legend: show scale
+                    ctx.restore();
+                    const k =
+                        0.1 *
+                        Math.max(
+                            1,
+                            Math.pow(10, Math.floor(Math.log10(target)))
+                        ); // round-ish
+                    const label = scaleLabel && scaleLabel();
+                    if (label) {
+                        label.textContent = `~${k.toFixed(3)} m/s ≈ ${(
+                            k * pxPerMS
+                        ).toFixed(0)} px`;
+                    }
+                };
+
+                return { draw };
+            })();
+
+            document.addEventListener('DOMContentLoaded', () => {
+                new SurfaceController();
+            });
+        </script>
+    </body>
+</html>

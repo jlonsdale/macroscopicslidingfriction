@@ -68,7 +68,7 @@ class SurfaceVisualizer {
                 seed: 42,
             },
             ndf: {
-                bins: 100, // histogram bins per axis
+                bins: 50, // histogram bins per axis
             },
         };
     }
@@ -430,7 +430,7 @@ class SurfaceVisualizer {
         };
     }
 
-    createNDFHistogram() {
+    createNDFHistogram(plot_id = 'ndf-histogram') {
         const { ndfSamples, areaWeights } = this.areaWeightedNDF();
         const bins = this.params.ndf.bins;
         const histogram = new Array(bins * bins).fill(0);
@@ -497,7 +497,7 @@ class SurfaceVisualizer {
         this._ndfHistogramCanvas = displayCanvas;
 
         // If there is a DOM element to show the histogram, put the canvas there
-        const plotEl = document.getElementById('ndf-histogram');
+        const plotEl = document.getElementById(plot_id);
         if (plotEl) {
             // clear existing content and append the canvas
             plotEl.innerHTML = '';

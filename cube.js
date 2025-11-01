@@ -12,6 +12,46 @@ class Cube {
         this.inertia = new THREE.Vector3(I, I, I);
 
         this.staticFriction = staticFriction; // static friction coefficient
+
+        // create a canvas-based stripe texture and keep it on the instance
+        const stripeSize = 512;
+        const canvas = document.createElement('canvas');
+        canvas.width = stripeSize;
+        canvas.height = stripeSize;
+        const ctx = canvas.getContext('2d');
+
+        // draw horizontal stripe pattern (rotated 90 degrees from vertical)
+        const stripes = 8;
+        for (let i = 0; i < stripes; i++) {
+            ctx.fillStyle = i % 2 === 0 ? '#ffffff' : '#00aa88';
+            ctx.fillRect(
+                0,
+                (i * stripeSize) / stripes,
+                stripeSize,
+                stripeSize / stripes
+            );
+        }
+
+        const stripeTexture = new THREE.CanvasTexture(canvas);
+        stripeTexture.wrapS = stripeTexture.wrapT = THREE.RepeatWrapping;
+        stripeTexture.repeat.set(1, 1);
+        this.stripeTexture = stripeTexture;
+
+        // Patch MeshLambertMaterial once so materials created below without an explicit map get the stripe texture.
+        // This avoids changing the later material creation lines.
+        if (!THREE.MeshLambertMaterial.__stripePatched) {
+            const _OriginalMeshLambert = THREE.MeshLambertMaterial;
+            const stripeTexRef = stripeTexture; // capture in closure
+            THREE.MeshLambertMaterial = function (params) {
+                params = Object.assign({}, params);
+                if (!params.map) params.map = stripeTexRef;
+                return new _OriginalMeshLambert(params);
+            };
+            // keep prototype so instanceof checks still work
+            THREE.MeshLambertMaterial.prototype =
+                _OriginalMeshLambert.prototype;
+            THREE.MeshLambertMaterial.__stripePatched = true;
+        }
         this.kineticFriction = kineticFriction; // kinetic friction coefficient
 
         this.mesh = null;

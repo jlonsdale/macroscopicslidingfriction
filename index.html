@@ -19,185 +19,6 @@
             <button id="pauseBtn" class="secondary">Pause (Off)</button>
         </div>
 
-        <div class="control-panel-surface">
-            <div class="surface-header">
-                <h3>NDF Surface Visualiser</h3>
-                <button id="toggleSurfaceBtn" class="toggle-btn">Show</button>
-            </div>
-
-            <div id="surfaceControls">
-                <!-- Surface Type Selector -->
-                <div class="control-group">
-                    <label for="surfaceType">Surface Type:</label>
-                    <select id="surfaceType">
-                        <option value="Sine" selected>Sine Wave Surface</option>
-                        <option value="Noisy">Noisy Surface</option>
-                    </select>
-                </div>
-
-                <!-- Sine Wave Controls -->
-                <div id="sineControls" style="display: block">
-                    <div class="control-group">
-                        <label for="sineAmplitude">Sine Amplitude:</label>
-                        <div class="slider-container">
-                            <input
-                                type="range"
-                                id="sineAmplitude"
-                                min="0.1"
-                                max="3.0"
-                                step="0.1"
-                                value="1.0"
-                            />
-                            <div class="slider-value" id="sineAmplitudeValue">
-                                1.0
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label for="sineWavelengthX">Wavelength X:</label>
-                        <div class="slider-container">
-                            <input
-                                type="range"
-                                id="sineWavelengthX"
-                                min="5.0"
-                                max="50.0"
-                                step="1.0"
-                                value="18.0"
-                            />
-                            <div class="slider-value" id="sineWavelengthXValue">
-                                18.0
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label for="sineRoughness">Surface Roughness:</label>
-                        <div class="slider-container">
-                            <input
-                                type="range"
-                                id="sineRoughness"
-                                min="0.0"
-                                max="1.0"
-                                step="0.05"
-                                value="0.3"
-                            />
-                            <div class="slider-value" id="sineRoughnessValue">
-                                0.3
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label for="sineRoughnessScale">Roughness Scale:</label>
-                        <div class="slider-container">
-                            <input
-                                type="range"
-                                id="sineRoughnessScale"
-                                min="10.0"
-                                max="100.0"
-                                step="5.0"
-                                value="50.0"
-                            />
-                            <div
-                                class="slider-value"
-                                id="sineRoughnessScaleValue"
-                            >
-                                50.0
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Noise Surface Controls -->
-                <div id="noiseControls" style="display: none">
-                    <div class="control-group">
-                        <label for="noiseAmplitude">Noise Amplitude:</label>
-                        <div class="slider-container">
-                            <input
-                                type="range"
-                                id="noiseAmplitude"
-                                min="0.5"
-                                max="5.0"
-                                step="0.1"
-                                value="3.0"
-                            />
-                            <div class="slider-value" id="noiseAmplitudeValue">
-                                3.0
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label for="noiseScale">Noise Scale:</label>
-                        <div class="slider-container">
-                            <input
-                                type="range"
-                                id="noiseScale"
-                                min="5.0"
-                                max="30.0"
-                                step="1.0"
-                                value="15.0"
-                            />
-                            <div class="slider-value" id="noiseScaleValue">
-                                15.0
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label for="noiseSeed">Noise Seed:</label>
-                        <div class="slider-container">
-                            <input
-                                type="range"
-                                id="noiseSeed"
-                                min="1"
-                                max="100"
-                                step="1"
-                                value="42"
-                            />
-                            <div class="slider-value" id="noiseSeedValue">
-                                42
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div
-                    class="apply-texture-buttons"
-                    style="display: flex; gap: 8px; align-items: center"
-                >
-                    <button
-                        id="applyTexturePlaneBtn"
-                        class="applyHistogramTextureBtn"
-                        data-target="plane"
-                        title="Apply histogram as texture to plane"
-                    >
-                        Apply Texture to Plane
-                    </button>
-                    <button
-                        id="applyTextureCubeBtn"
-                        class="applyHistogramTextureBtn"
-                        data-target="cube"
-                        title="Apply histogram as texture to cube"
-                    >
-                        Apply Texture to Cube
-                    </button>
-                </div>
-                <div id="miniView">
-                    <div
-                        id="ndf-histogram"
-                        style="
-                            width: 100%;
-                            height: 100%;
-                            background: #111;
-                            border-radius: 4px;
-                            display: block;
-                        "
-                    ></div>
-                </div>
-            </div>
-        </div>
-
         <div class="control-panel-right">
             <h3>Cube Properties</h3>
 
@@ -318,10 +139,24 @@
                     <option value="45">45°</option>
                 </select>
             </div>
+
+            <div class="control-group">
+                <label for="textureRotationSlider">Texture Rotation:</label>
+                <div class="slider-container">
+                    <input
+                        type="range"
+                        id="textureRotationSlider"
+                        min="0"
+                        max="360"
+                        step="5"
+                        value="0"
+                    />
+                    <div class="slider-value" id="textureRotationValue">0°</div>
+                </div>
+            </div>
             <div class="control-group">
                 <h3>Reset Controls</h3>
                 <button id="resetSceneBtn">Reset Scene</button>
-                <button id="resetTextureBtn">Reset Texture</button>
             </div>
         </div>
 
@@ -329,10 +164,8 @@
 
         <!-- Graphics Libraries -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+        <!-- <script src="https://cdn.plot.ly/plotly-latest.min.js"></script> -->
 
         <!-- Application Scripts -->
         <script src="surface_visualizer.js"></script>
@@ -340,12 +173,10 @@
         <script src="plane.js"></script>
         <script src="rigidbodysimGS.js"></script>
         <script src="camera-controls.js"></script>
-        <script src="surfaceview.js"></script>
         <script src="scene.js"></script>
 
         <!-- Surface Controls Value Updates -->
         <script>
-            // Update slider value displays for surface controls
             document.addEventListener('DOMContentLoaded', function () {
                 // Sine controls value displays
                 const sineAmplitude = document.getElementById('sineAmplitude');
