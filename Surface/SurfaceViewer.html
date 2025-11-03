@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Surface Viewer</title>
+        <style>
+            body {
+                margin: 0;
+                overflow: hidden;
+                font-family: Arial, sans-serif;
+            }
+            .viewport-container {
+                display: flex;
+                width: 100vw;
+                height: 100vh;
+            }
+            .viewport {
+                position: relative;
+                width: 50%;
+                height: 100%;
+                border-right: 2px solid #333;
+            }
+            .viewport:last-child {
+                border-right: none;
+            }
+            canvas {
+                display: block;
+                width: 100%;
+                height: 100%;
+            }
+            .info-panel {
+                color: white;
+                font-size: 12px;
+                background: rgba(0, 0, 0, 0.8);
+                padding: 8px;
+                border-radius: 5px;
+                min-width: 200px;
+                flex-shrink: 0;
+            }
+            .slider-container {
+                margin: 8px 0;
+            }
+            .slider-container label {
+                display: block;
+                margin-bottom: 4px;
+                font-size: 11px;
+            }
+            .slider {
+                width: 100%;
+                margin: 4px 0;
+                -webkit-appearance: none;
+                appearance: none;
+                height: 4px;
+                background: #444;
+                border-radius: 2px;
+                outline: none;
+            }
+            .slider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 12px;
+                height: 12px;
+                background: #fff;
+                border-radius: 50%;
+                cursor: pointer;
+            }
+            .slider::-moz-range-thumb {
+                width: 12px;
+                height: 12px;
+                background: #fff;
+                border-radius: 50%;
+                cursor: pointer;
+                border: none;
+            }
+            .value-display {
+                font-size: 10px;
+                color: #ccc;
+            }
+            .ndf-button {
+                background: #4caf50;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 11px;
+                margin-top: 8px;
+                width: 100%;
+            }
+            .ndf-button:hover {
+                background: #45a049;
+            }
+            .ndf-view {
+                position: absolute;
+                bottom: 10px;
+                right: 10px;
+                width: 150px;
+                height: 100px;
+                background: rgba(0, 0, 0, 0.9);
+                border: 1px solid #444;
+                border-radius: 5px;
+                color: white;
+                font-size: 10px;
+                padding: 8px;
+                z-index: 100;
+                display: none;
+            }
+            .ndf-view.visible {
+                display: block;
+            }
+            .ndf-view h5 {
+                margin: 0 0 5px 0;
+                font-size: 11px;
+                color: #ccc;
+            }
+            .controls-container {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                display: flex;
+                gap: 10px;
+                z-index: 100;
+            }
+            .square-div {
+                width: 200px;
+                height: 200px;
+                background: rgba(40, 40, 40, 0.9);
+                border: 2px solid #666;
+                border-radius: 5px;
+                flex-shrink: 0;
+            }
+            .graph-container {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                width: 300px;
+                height: 300px;
+                background: rgba(0, 0, 0, 0.9);
+                border: 2px solid #666;
+                border-radius: 8px;
+                z-index: 200;
+                display: flex;
+                flex-direction: column;
+                padding: 15px;
+                box-sizing: border-box;
+            }
+            .graph-header {
+                color: #4caf50;
+                font-size: 16px;
+                font-weight: bold;
+                margin-bottom: 10px;
+                text-align: center;
+            }
+            .graph-content {
+                flex: 1;
+                background: #222;
+                border: 1px solid #666;
+                border-radius: 5px;
+                position: relative;
+                overflow: hidden;
+            }
+            .graph-canvas {
+                width: 100%;
+                height: 100%;
+                display: block;
+            }
+            .download-button {
+                background: #2196f3;
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 11px;
+                margin-top: 8px;
+                width: 100%;
+                transition: background-color 0.3s;
+            }
+            .download-button:hover {
+                background: #1976d2;
+            }
+            .download-button:active {
+                background: #0d47a1;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="viewport-container">
+            <div class="viewport" id="viewport1">
+                <div class="controls-container">
+                    <div class="info-panel">
+                        <h4>Surface 1</h4>
+                        <div class="slider-container">
+                            <label
+                                >Amplitude:
+                                <span id="amp1-value">2.5</span></label
+                            >
+                            <input
+                                type="range"
+                                class="slider"
+                                id="amplitude1"
+                                min="1"
+                                max="5"
+                                value="2.5"
+                                step="0.1"
+                            />
+                        </div>
+                        <div class="slider-container">
+                            <label
+                                >Wavelength:
+                                <span id="wave1-value">50</span></label
+                            >
+                            <input
+                                type="range"
+                                class="slider"
+                                id="wavelength1"
+                                min="1"
+                                max="300"
+                                value="50"
+                                step="1"
+                            />
+                        </div>
+                        <div class="slider-container">
+                            <label
+                                >Noise: <span id="noise1-value">1</span></label
+                            >
+                            <input
+                                type="range"
+                                class="slider"
+                                id="noise1"
+                                min="0"
+                                max="20"
+                                value="1"
+                                step="0.1"
+                            />
+                        </div>
+                        <div class="slider-container">
+                            <label
+                                >Rotation:
+                                <span id="rotation1-value">0°</span></label
+                            >
+                            <input
+                                type="range"
+                                class="slider"
+                                id="rotation1"
+                                min="0"
+                                max="360"
+                                value="0"
+                                step="1"
+                            />
+                        </div>
+                        <p class="value-display">Mouse: Rotate | Wheel: Zoom</p>
+                    </div>
+                    <div class="square-div" id="square1"></div>
+                </div>
+            </div>
+            <div class="viewport" id="viewport2">
+                <div class="controls-container">
+                    <div class="info-panel">
+                        <h4>Surface 2</h4>
+                        <div class="slider-container">
+                            <label
+                                >Amplitude:
+                                <span id="amp2-value">2.5</span></label
+                            >
+                            <input
+                                type="range"
+                                class="slider"
+                                id="amplitude2"
+                                min="1"
+                                max="5"
+                                value="2.5"
+                                step="0.1"
+                            />
+                        </div>
+                        <div class="slider-container">
+                            <label
+                                >Wavelength:
+                                <span id="wave2-value">50</span></label
+                            >
+                            <input
+                                type="range"
+                                class="slider"
+                                id="wavelength2"
+                                min="1"
+                                max="300"
+                                value="50"
+                                step="1"
+                            />
+                        </div>
+                        <div class="slider-container">
+                            <label
+                                >Noise: <span id="noise2-value">1</span></label
+                            >
+                            <input
+                                type="range"
+                                class="slider"
+                                id="noise2"
+                                min="0"
+                                max="20"
+                                value="1"
+                                step="0.1"
+                            />
+                        </div>
+                        <div class="slider-container">
+                            <label
+                                >Rotation:
+                                <span id="rotation2-value">0°</span></label
+                            >
+                            <input
+                                type="range"
+                                class="slider"
+                                id="rotation2"
+                                min="0"
+                                max="360"
+                                value="0"
+                                step="1"
+                            />
+                        </div>
+                        <p class="value-display">Mouse: Rotate | Wheel: Zoom</p>
+                    </div>
+                    <div class="square-div" id="square2"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graph Container -->
+        <div class="graph-container" id="graph-container">
+            <div class="graph-header">Anisotropic Friction Cone</div>
+            <div class="graph-content">
+                <div class="graph-canvas" id="graph-canvas"></div>
+            </div>
+            <button
+                class="download-button"
+                id="download-graph-btn"
+                onclick="downloadGraph()"
+            >
+                📊 Download Graph as PNG
+            </button>
+        </div>
+
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+        <script src="./Surface.js"></script>
+        <script src="./Friction.js"></script>
+
+        <script>
+            // Dual viewport setup
+            class ViewportManager {
+                constructor(containerId, surfaceParams, viewTitle, sliderIds) {
+                    this.container = document.getElementById(containerId);
+                    this.surfaceParams = surfaceParams;
+                    this.viewTitle = viewTitle;
+                    this.sliderIds = sliderIds;
+
+                    // Scene setup
+                    this.scene = new THREE.Scene();
+                    this.camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+                    this.renderer = new THREE.WebGLRenderer({
+                        antialias: true,
+                    });
+
+                    // Set renderer size to half the window width
+                    this.renderer.setSize(
+                        window.innerWidth / 2,
+                        window.innerHeight
+                    );
+                    this.renderer.setClearColor(0x1a1a1a);
+                    this.container.appendChild(this.renderer.domElement);
+
+                    // Enhanced Lighting
+                    const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+                    this.scene.add(ambientLight);
+
+                    // Main directional light
+                    const directionalLight = new THREE.DirectionalLight(
+                        0xffffff,
+                        1.0
+                    );
+                    directionalLight.position.set(5, 10, 5);
+                    directionalLight.castShadow = true;
+                    this.scene.add(directionalLight);
+
+                    // Secondary light for fill
+                    const fillLight = new THREE.DirectionalLight(0x8888ff, 0.3);
+                    fillLight.position.set(-3, 5, -3);
+                    this.scene.add(fillLight);
+
+                    // Rim light for edge definition
+                    const rimLight = new THREE.DirectionalLight(0xffaa88, 0.2);
+                    rimLight.position.set(0, -2, 8);
+                    this.scene.add(rimLight);
+
+                    // Create surface
+                    this.createSurface();
+
+                    // Camera setup - looking down at an angle
+                    this.camera.position.set(400, 400, 400);
+                    this.camera.lookAt(0, 0, 0);
+
+                    // Mouse controls
+                    this.setupMouseControls();
+
+                    // Setup sliders
+                    this.setupSliders();
+
+                    // Animation
+                    this.animate();
+                }
+
+                createSurface() {
+                    // Remove existing surface if it exists
+                    if (this.surface) {
+                        this.scene.remove(this.surface.mesh);
+                        this.surface.mesh.geometry.dispose();
+                        this.surface.mesh.material.dispose();
+                    }
+
+                    this.surface = new Surface(
+                        this.surfaceParams.amplitude,
+                        this.surfaceParams.wavelengthX,
+                        this.surfaceParams.noise,
+                        this.surfaceParams.rotation
+                    );
+                    this.surface.mesh.material.color.setHex(
+                        this.surfaceParams.color
+                    );
+                    this.scene.add(this.surface.mesh);
+
+                    // Render initial histogram
+                    this.surface.createNDFHistogram(
+                        this.sliderIds.histogramContainer
+                    );
+                }
+
+                updateSurface() {
+                    this.createSurface();
+                    // Render histogram in the square div
+                    this.surface.createNDFHistogram(
+                        this.sliderIds.histogramContainer
+                    );
+                }
+
+                setupSliders() {
+                    const amplitudeSlider = document.getElementById(
+                        this.sliderIds.amplitude
+                    );
+                    const wavelengthSlider = document.getElementById(
+                        this.sliderIds.wavelength
+                    );
+                    const noiseSlider = document.getElementById(
+                        this.sliderIds.noise
+                    );
+                    const rotationSlider = document.getElementById(
+                        this.sliderIds.rotation
+                    );
+
+                    const amplitudeValue = document.getElementById(
+                        this.sliderIds.amplitudeValue
+                    );
+                    const wavelengthValue = document.getElementById(
+                        this.sliderIds.wavelengthValue
+                    );
+                    const noiseValue = document.getElementById(
+                        this.sliderIds.noiseValue
+                    );
+                    const rotationValue = document.getElementById(
+                        this.sliderIds.rotationValue
+                    );
+
+                    amplitudeSlider.addEventListener('input', e => {
+                        this.surfaceParams.amplitude = parseFloat(
+                            e.target.value
+                        );
+                        amplitudeValue.textContent = e.target.value;
+                        this.updateSurface();
+                    });
+
+                    wavelengthSlider.addEventListener('input', e => {
+                        this.surfaceParams.wavelengthX = parseFloat(
+                            e.target.value
+                        );
+                        wavelengthValue.textContent = e.target.value;
+                        this.updateSurface();
+                    });
+
+                    noiseSlider.addEventListener('input', e => {
+                        this.surfaceParams.noise = parseFloat(e.target.value);
+                        noiseValue.textContent = e.target.value;
+                        this.updateSurface();
+                    });
+
+                    rotationSlider.addEventListener('input', e => {
+                        const degrees = parseFloat(e.target.value);
+                        this.surfaceParams.rotation = (degrees * Math.PI) / 180; // Convert to radians
+                        rotationValue.textContent = degrees + '°';
+                        this.updateSurface();
+                    });
+                }
+
+                setupMouseControls() {
+                    let mouseDown = false;
+                    let mouseX = 0;
+                    let mouseY = 0;
+                    let cameraAngleX = 0;
+                    let cameraAngleY = 0;
+                    const cameraRadius = 800;
+
+                    const canvas = this.renderer.domElement;
+
+                    canvas.addEventListener('mousedown', event => {
+                        mouseDown = true;
+                        mouseX = event.clientX;
+                        mouseY = event.clientY;
+                        event.preventDefault();
+                    });
+
+                    canvas.addEventListener('mouseup', () => {
+                        mouseDown = false;
+                    });
+
+                    canvas.addEventListener('mousemove', event => {
+                        if (!mouseDown) return;
+
+                        const deltaX = event.clientX - mouseX;
+                        const deltaY = event.clientY - mouseY;
+
+                        cameraAngleY += deltaX * 0.01;
+                        cameraAngleX += deltaY * 0.01;
+
+                        // Limit vertical rotation
+                        cameraAngleX = Math.max(
+                            -Math.PI / 2,
+                            Math.min(Math.PI / 2, cameraAngleX)
+                        );
+
+                        // Update camera position
+                        this.camera.position.x =
+                            cameraRadius *
+                            Math.sin(cameraAngleY) *
+                            Math.cos(cameraAngleX);
+                        this.camera.position.y =
+                            cameraRadius * Math.sin(cameraAngleX);
+                        this.camera.position.z =
+                            cameraRadius *
+                            Math.cos(cameraAngleY) *
+                            Math.cos(cameraAngleX);
+
+                        this.camera.lookAt(0, 0, 0);
+
+                        mouseX = event.clientX;
+                        mouseY = event.clientY;
+                    });
+
+                    canvas.addEventListener('wheel', event => {
+                        const zoom = event.deltaY > 0 ? 1.1 : 0.9;
+                        this.camera.position.multiplyScalar(zoom);
+                        this.camera.lookAt(0, 0, 0);
+                        event.preventDefault();
+                    });
+                }
+
+                animate() {
+                    requestAnimationFrame(() => this.animate());
+
+                    this.renderer.render(this.scene, this.camera);
+                }
+
+                resize() {
+                    this.camera.aspect =
+                        window.innerWidth / 2 / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(
+                        window.innerWidth / 2,
+                        window.innerHeight
+                    );
+                }
+            }
+
+            // Create two viewports with different surfaces
+            const viewport1 = new ViewportManager(
+                'viewport1',
+                {
+                    amplitude: 1.5,
+                    wavelengthX: 25,
+                    noise: 1.5,
+                    rotation: 0,
+                    color: 0x4444ff,
+                },
+                'Smooth Sine Wave',
+                {
+                    amplitude: 'amplitude1',
+                    wavelength: 'wavelength1',
+                    noise: 'noise1',
+                    rotation: 'rotation1',
+                    amplitudeValue: 'amp1-value',
+                    wavelengthValue: 'wave1-value',
+                    noiseValue: 'noise1-value',
+                    rotationValue: 'rotation1-value',
+                    histogramContainer: 'square1',
+                }
+            );
+
+            const viewport2 = new ViewportManager(
+                'viewport2',
+                {
+                    amplitude: 1.5,
+                    wavelengthX: 25,
+                    noise: 1.5,
+                    rotation: 0,
+                    color: 0xff4444,
+                },
+                'Noisy Sine Wave',
+                {
+                    amplitude: 'amplitude2',
+                    wavelength: 'wavelength2',
+                    noise: 'noise2',
+                    rotation: 'rotation2',
+                    amplitudeValue: 'amp2-value',
+                    wavelengthValue: 'wave2-value',
+                    noiseValue: 'noise2-value',
+                    rotationValue: 'rotation2-value',
+                    histogramContainer: 'square2',
+                }
+            );
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                viewport1.resize();
+                viewport2.resize();
+            });
+
+            //PRINT BOTH SURFACES
+
+            const s1 = viewport1.surface;
+            const s2 = viewport2.surface;
+            let plotdata = [];
+
+            const friction = new Friction(
+                s1,
+                s2,
+                s1.areaWeights,
+                s2.areaWeights,
+                s1.ndfSamples,
+                s2.ndfSamples,
+                s1.normals,
+                s2.normals
+            );
+
+            // Add keydown event listener to recalculate friction when 'f' is pressed
+            document.addEventListener('keydown', event => {
+                if (event.key.toLowerCase() === 'f') {
+                    // Get current surfaces from viewports
+                    const s1 = viewport1.surface;
+                    const s2 = viewport2.surface;
+
+                    const friction = new Friction(
+                        s1,
+                        s2,
+                        s1.areaWeights,
+                        s2.areaWeights,
+                        s1.ndfSamples,
+                        s2.ndfSamples,
+                        s1.normals,
+                        s2.normals
+                    );
+
+                    // Plot the directional profile using Plotly
+                    plotDirectionalProfile(friction);
+                }
+            });
+
+            // Function to plot directional friction profile as anisotropic Coulomb friction cone
+            function plotDirectionalProfile(friction) {
+                // Get directional profile data
+                const profile = friction.directionalProfile(72); // 72 directions around circle for smooth cone
+
+                const { angles, mus } = profile;
+                // Calculate and print min, max, and range of friction coefficients
+                const minMu = Math.min(...profile.mus);
+                const maxMu = Math.max(...profile.mus);
+                const range = maxMu - minMu;
+
+                console.log(`Min friction coefficient: ${minMu.toFixed(4)}`);
+                console.log(`Max friction coefficient: ${maxMu.toFixed(4)}`);
+                console.log(`Range: ${range.toFixed(4)}`);
+
+                // Convert angles to degrees for polar plot
+                const anglesDegrees = angles.map(a => (a * 180) / Math.PI);
+
+                // Close the polar plot by adding the first point at the end
+                const closedAngles = [...anglesDegrees, anglesDegrees[0]];
+                const closedMus = [...mus, mus[0]];
+
+                // Create the anisotropic friction cone trace
+                const frictionCone = {
+                    type: 'scatterpolar',
+                    r: closedMus,
+                    theta: closedAngles,
+                    mode: 'lines',
+                    name: 'Friction Cone',
+                    line: {
+                        color: 'rgb(255, 100, 100)',
+                        width: 3,
+                    },
+                    fill: 'toself',
+                    fillcolor: 'rgba(255, 100, 100, 0.3)',
+                };
+
+                // Add reference circles for friction coefficient levels
+                const maxRadius = Math.max(...mus);
+                const refAngles = Array.from({ length: 361 }, (_, i) => i);
+
+                const circles = [];
+                for (let level = 0.1; level <= maxRadius; level += 0.1) {
+                    circles.push({
+                        type: 'scatterpolar',
+                        r: Array(361).fill(level),
+                        theta: refAngles,
+                        mode: 'lines',
+                        line: {
+                            color: 'rgba(200, 200, 200, 0.3)',
+                            width: 1,
+                            dash: 'dot',
+                        },
+                        showlegend: false,
+                        hoverinfo: 'skip',
+                    });
+                }
+
+                const layout = {
+                    title: {
+                        text: 'Anisotropic Coulomb Friction Cone',
+                        font: { size: 14, color: 'white' },
+                    },
+                    polar: {
+                        bgcolor: 'rgba(0, 0, 0, 0)',
+                        radialaxis: {
+                            title: 'Friction Coefficient (μ)',
+                            range: [0, maxRadius * 1.1],
+                            tickmode: 'linear',
+                            tick0: 0,
+                            dtick: 0.1,
+                            gridcolor: 'rgba(200, 200, 200, 0.5)',
+                            linecolor: 'rgba(200, 200, 200, 0.7)',
+                            tickcolor: 'white',
+                            tickfont: { color: 'white', size: 10 },
+                        },
+                        angularaxis: {
+                            direction: 'counterclockwise',
+                            tickmode: 'linear',
+                            tick0: 0,
+                            dtick: 45,
+                            gridcolor: 'rgba(200, 200, 200, 0.5)',
+                            linecolor: 'rgba(200, 200, 200, 0.7)',
+                            tickcolor: 'white',
+                            tickfont: { color: 'white', size: 10 },
+                        },
+                    },
+                    paper_bgcolor: 'rgba(0, 0, 0, 0)',
+                    plot_bgcolor: 'rgba(0, 0, 0, 0)',
+                    margin: { t: 40, r: 20, b: 20, l: 20 },
+                    height: 250,
+                    showlegend: false,
+                    font: { color: 'white' },
+                };
+
+                const config = {
+                    responsive: true,
+                    displayModeBar: false,
+                };
+
+                // Plot with reference circles and friction cone
+                Plotly.newPlot(
+                    'graph-canvas',
+                    [...circles, frictionCone],
+                    layout,
+                    config
+                );
+            }
+
+            // Reinitialize graph on window resize
+        </script>
+    </body>
+</html>
