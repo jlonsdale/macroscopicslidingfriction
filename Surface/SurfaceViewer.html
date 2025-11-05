@@ -37,9 +37,13 @@
                 border-radius: 5px;
                 min-width: 200px;
                 flex-shrink: 0;
+                max-height: 90vh;
+                overflow-y: auto;
             }
             .slider-container {
                 margin: 8px 0;
+                width: 100%;
+                display: block;
             }
             .slider-container label {
                 display: block;
@@ -134,8 +138,8 @@
                 position: fixed;
                 bottom: 20px;
                 right: 20px;
-                width: 300px;
-                height: 300px;
+                width: 500px;
+                height: 500px;
                 background: rgba(0, 0, 0, 0.9);
                 border: 2px solid #666;
                 border-radius: 8px;
@@ -152,8 +156,16 @@
                 margin-bottom: 10px;
                 text-align: center;
             }
+            .graph-subheader {
+                color: #888;
+                font-size: 12px;
+                font-style: italic;
+                margin-bottom: 15px;
+                text-align: center;
+            }
             .graph-content {
                 flex: 1;
+                display: flex;
                 background: #222;
                 border: 1px solid #666;
                 border-radius: 5px;
@@ -182,6 +194,38 @@
             }
             .download-button:active {
                 background: #0d47a1;
+            }
+            .friction-panel {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                background: rgba(0, 0, 0, 0.8);
+                border: 1px solid #666;
+                border-radius: 8px;
+                z-index: 200;
+                display: flex;
+                flex-direction: column;
+                padding: 15px;
+                box-sizing: border-box;
+                min-width: 220px;
+                color: white;
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+            }
+            .friction-header {
+                color: #ff9800;
+                font-size: 14px;
+                font-weight: bold;
+                text-align: center;
+                border-bottom: 1px solid #666;
+                padding-bottom: 8px;
+            }
+            .friction-instructions {
+                color: #ff9800;
+                font-size: 12px;
+                font-weight: lighter;
+                margin-bottom: 12px;
+                text-align: center;
             }
         </style>
     </head>
@@ -230,9 +274,9 @@
                                 class="slider"
                                 id="noise1"
                                 min="0"
-                                max="20"
+                                max="3"
                                 value="1"
-                                step="0.1"
+                                step="0.01"
                             />
                         </div>
                         <div class="slider-container">
@@ -247,7 +291,21 @@
                                 min="0"
                                 max="360"
                                 value="0"
-                                step="1"
+                                step="15"
+                            />
+                        </div>
+                        <div class="slider-container">
+                            <label
+                                >Bins: <span id="bins1-value">50</span></label
+                            >
+                            <input
+                                type="range"
+                                class="slider"
+                                id="bins1"
+                                min="50"
+                                max="200"
+                                value="50"
+                                step="5"
                             />
                         </div>
                         <p class="value-display">Mouse: Rotate | Wheel: Zoom</p>
@@ -298,9 +356,9 @@
                                 class="slider"
                                 id="noise2"
                                 min="0"
-                                max="20"
+                                max="3"
                                 value="1"
-                                step="0.1"
+                                step="0.01"
                             />
                         </div>
                         <div class="slider-container">
@@ -315,7 +373,21 @@
                                 min="0"
                                 max="360"
                                 value="0"
-                                step="1"
+                                step="15"
+                            />
+                        </div>
+                        <div class="slider-container">
+                            <label
+                                >Bins: <span id="bins2-value">50</span></label
+                            >
+                            <input
+                                type="range"
+                                class="slider"
+                                id="bins2"
+                                min="50"
+                                max="200"
+                                value="50"
+                                step="5"
                             />
                         </div>
                         <p class="value-display">Mouse: Rotate | Wheel: Zoom</p>
@@ -327,7 +399,7 @@
 
         <!-- Graph Container -->
         <div class="graph-container" id="graph-container">
-            <div class="graph-header">Anisotropic Friction Cone</div>
+            <div class="graph-header">Friction Cone</div>
             <div class="graph-content">
                 <div class="graph-canvas" id="graph-canvas"></div>
             </div>
@@ -338,6 +410,41 @@
             >
                 📊 Download Graph as PNG
             </button>
+        </div>
+
+        <!-- Friction Parameters Panel -->
+        <div class="friction-panel" id="friction-panel">
+            <div class="friction-header">
+                Friction Parameters
+                <div class="friction-instructions">
+                    (Please Press "F" to render Friction Cone)
+                </div>
+            </div>
+
+            <div class="slider-container">
+                <label>K Factor: <span id="k1-value">3.0</span></label>
+                <input
+                    type="range"
+                    class="slider"
+                    id="k1-slider"
+                    min="0.1"
+                    max="10.0"
+                    value="3.0"
+                    step="0.1"
+                />
+            </div>
+            <div class="slider-container">
+                <label>M Factor: <span id="m1-value">1.0</span></label>
+                <input
+                    type="range"
+                    class="slider"
+                    id="m1-slider"
+                    min="0.1"
+                    max="3.0"
+                    value="1.0"
+                    step="0.1"
+                />
+            </div>
         </div>
 
         <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -353,6 +460,8 @@
                     this.surfaceParams = surfaceParams;
                     this.viewTitle = viewTitle;
                     this.sliderIds = sliderIds;
+
+                    console.log(this.sliderIds);
 
                     // Scene setup
                     this.scene = new THREE.Scene();
@@ -421,7 +530,10 @@
                         this.surfaceParams.amplitude,
                         this.surfaceParams.wavelengthX,
                         this.surfaceParams.noise,
-                        this.surfaceParams.rotation
+                        this.surfaceParams.rotation,
+                        500, // height
+                        500, // width
+                        this.surfaceParams.bins
                     );
                     this.surface.mesh.material.color.setHex(
                         this.surfaceParams.color
@@ -455,6 +567,9 @@
                     const rotationSlider = document.getElementById(
                         this.sliderIds.rotation
                     );
+                    const binsSlider = document.getElementById(
+                        this.sliderIds.bins
+                    );
 
                     const amplitudeValue = document.getElementById(
                         this.sliderIds.amplitudeValue
@@ -467,6 +582,9 @@
                     );
                     const rotationValue = document.getElementById(
                         this.sliderIds.rotationValue
+                    );
+                    const binsValue = document.getElementById(
+                        this.sliderIds.binsValue
                     );
 
                     amplitudeSlider.addEventListener('input', e => {
@@ -495,6 +613,12 @@
                         const degrees = parseFloat(e.target.value);
                         this.surfaceParams.rotation = (degrees * Math.PI) / 180; // Convert to radians
                         rotationValue.textContent = degrees + '°';
+                        this.updateSurface();
+                    });
+
+                    binsSlider.addEventListener('input', e => {
+                        this.surfaceParams.bins = parseInt(e.target.value);
+                        binsValue.textContent = e.target.value;
                         this.updateSurface();
                     });
                 }
@@ -587,6 +711,7 @@
                     noise: 1.5,
                     rotation: 0,
                     color: 0x4444ff,
+                    bins: 50,
                 },
                 'Smooth Sine Wave',
                 {
@@ -594,10 +719,12 @@
                     wavelength: 'wavelength1',
                     noise: 'noise1',
                     rotation: 'rotation1',
+                    bins: 'bins1',
                     amplitudeValue: 'amp1-value',
                     wavelengthValue: 'wave1-value',
                     noiseValue: 'noise1-value',
                     rotationValue: 'rotation1-value',
+                    binsValue: 'bins1-value',
                     histogramContainer: 'square1',
                 }
             );
@@ -610,6 +737,7 @@
                     noise: 1.5,
                     rotation: 0,
                     color: 0xff4444,
+                    bins: 50,
                 },
                 'Noisy Sine Wave',
                 {
@@ -617,21 +745,27 @@
                     wavelength: 'wavelength2',
                     noise: 'noise2',
                     rotation: 'rotation2',
+                    bins: 'bins2',
                     amplitudeValue: 'amp2-value',
                     wavelengthValue: 'wave2-value',
                     noiseValue: 'noise2-value',
                     rotationValue: 'rotation2-value',
+                    binsValue: 'bins2-value',
                     histogramContainer: 'square2',
                 }
             );
+
+            // Surface-specific friction parameters
+            let surfaceK = 3.0;
+            let surfaceM = 1.0;
+            let surface2K = 3.0;
+            let surface2M = 1.0;
 
             // Handle window resize
             window.addEventListener('resize', () => {
                 viewport1.resize();
                 viewport2.resize();
             });
-
-            //PRINT BOTH SURFACES
 
             const s1 = viewport1.surface;
             const s2 = viewport2.surface;
@@ -645,7 +779,11 @@
                 s1.ndfSamples,
                 s2.ndfSamples,
                 s1.normals,
-                s2.normals
+                s2.normals,
+                {
+                    k: (surfaceK + surface2K) / 2,
+                    M: (surfaceM + surface2M) / 2,
+                }
             );
 
             // Add keydown event listener to recalculate friction when 'f' is pressed
@@ -663,7 +801,11 @@
                         s1.ndfSamples,
                         s2.ndfSamples,
                         s1.normals,
-                        s2.normals
+                        s2.normals,
+                        {
+                            k: surfaceK,
+                            M: surfaceM,
+                        }
                     );
 
                     // Plot the directional profile using Plotly
@@ -674,9 +816,9 @@
             // Function to plot directional friction profile as anisotropic Coulomb friction cone
             function plotDirectionalProfile(friction) {
                 // Get directional profile data
-                const profile = friction.directionalProfile(72); // 72 directions around circle for smooth cone
-
+                const profile = friction.directionalProfile();
                 const { angles, mus } = profile;
+
                 // Calculate and print min, max, and range of friction coefficients
                 const minMu = Math.min(...profile.mus);
                 const maxMu = Math.max(...profile.mus);
@@ -760,9 +902,17 @@
                     },
                     paper_bgcolor: 'rgba(0, 0, 0, 0)',
                     plot_bgcolor: 'rgba(0, 0, 0, 0)',
-                    margin: { t: 40, r: 20, b: 20, l: 20 },
-                    height: 250,
-                    showlegend: false,
+                    margin: { t: 40, r: 20, b: 50, l: 20 },
+                    height: 400,
+                    showlegend: true,
+                    legend: {
+                        orientation: 'h',
+                        x: 0.5,
+                        xanchor: 'center',
+                        y: -0.1,
+                        yanchor: 'top',
+                        font: { color: 'white', size: 12 },
+                    },
                     font: { color: 'white' },
                 };
 
@@ -780,7 +930,68 @@
                 );
             }
 
-            // Reinitialize graph on window resize
+            // Global function to update friction calculation
+            function updateFriction() {
+                // Get current surfaces from both viewports
+                const s1 = viewport1.surface;
+                const s2 = viewport2.surface;
+
+                console.log(surfaceK, surfaceM);
+
+                // Create new friction object with current parameters
+                const friction = new Friction(
+                    s1,
+                    s2,
+                    s1.areaWeights,
+                    s2.areaWeights,
+                    s1.ndfSamples,
+                    s2.ndfSamples,
+                    s1.normals,
+                    s2.normals,
+                    {
+                        k: surfaceK,
+                        M: surfaceM,
+                    }
+                );
+
+                // Update the friction plot
+                plotDirectionalProfile(friction);
+            }
+
+            // Function to download the graph as PNG
+            function downloadGraph() {
+                const graphDiv = document.getElementById('graph-canvas');
+                if (graphDiv && graphDiv.data) {
+                    Plotly.downloadImage(graphDiv, {
+                        format: 'png',
+                        filename: 'anisotropic_friction_cone',
+                        width: 800,
+                        height: 600,
+                        scale: 2, // Higher resolution
+                    });
+                } else {
+                    console.error('Graph not found or not ready for download');
+                    alert(
+                        'Graph is not ready for download. Please wait for the graph to load.'
+                    );
+                }
+            }
+
+            // Setup friction parameters panel event listeners
+            const k1Slider = document.getElementById('k1-slider');
+            const k1Value = document.getElementById('k1-value');
+            const m1Slider = document.getElementById('m1-slider');
+            const m1Value = document.getElementById('m1-value');
+
+            k1Slider.addEventListener('input', e => {
+                surfaceK = parseFloat(e.target.value);
+                k1Value.textContent = e.target.value;
+            });
+
+            m1Slider.addEventListener('input', e => {
+                surfaceM = parseFloat(e.target.value);
+                m1Value.textContent = e.target.value;
+            });
         </script>
     </body>
 </html>

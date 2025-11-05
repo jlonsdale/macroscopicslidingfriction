@@ -94,24 +94,20 @@ class Friction {
 
         this.loadscaling =
             this.Fref > 0 ? Math.pow(this.FN / this.Fref, this.alpha) : 1.0;
+        this.numDirs = 72;
+        this.directionalProfileCache = this.directionalProfile();
     }
 
     // ---------------------------------------------------------------------
     // Public methods
     // ---------------------------------------------------------------------
 
-    /**
-     * Sample μ(u) around the circle for visualization.
-     * μ(u) = k · overlap1D(u, dTheta) · (FN/Fref)^alpha · M
-     * @param {number} numDirs - number of directions (default 200)
-     * @returns {{angles:number[], mus:number[]}}
-     */
-    directionalProfile(numDirs = 200) {
-        const angles = new Array(numDirs);
-        const mus = new Array(numDirs);
+    directionalProfile() {
+        const angles = new Array(this.numDirs);
+        const mus = new Array(this.numDirs);
 
-        for (let i = 0; i < numDirs; i++) {
-            const a = (i / numDirs) * Math.PI * 2.0;
+        for (let i = 0; i < this.numDirs; i++) {
+            const a = (i / this.numDirs) * Math.PI * 2.0;
             angles[i] = a;
             mus[i] =
                 this.k *
@@ -119,7 +115,18 @@ class Friction {
                 this.loadscaling *
                 this.M;
         }
-        return { angles, mus };
+        this.directionalProfileCache = { angles: angles, mus: mus };
+        return this.directionalProfileCache;
+    }
+
+    getMuAtAngle(angle) {
+        if (!this.directionalProfileCache) {
+            this.directionalProfile();
+        }
+        const index = Math.floor(
+            ((angle % (2 * Math.PI)) / (2 * Math.PI)) * this.numDirs
+        );
+        return this.directionalProfileCache.mus[index];
     }
 
     /**

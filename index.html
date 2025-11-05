@@ -17,6 +17,13 @@
                 Logging (Off)
             </button>
             <button id="pauseBtn" class="secondary">Pause (Off)</button>
+            <button
+                id="surfaceInspectorBtn"
+                class="surface-inspector"
+                onclick="openSurfaceInspector()"
+            >
+                Surface Inspector
+            </button>
         </div>
 
         <div class="control-panel-right">
@@ -261,6 +268,11 @@
                     });
                 }
             });
+
+            // Function to open Surface Inspector
+            function openSurfaceInspector() {
+                window.open('Surface/SurfaceViewer.html', '_blank');
+            }
         </script>
     </body>
 </html>

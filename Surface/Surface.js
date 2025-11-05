@@ -22,17 +22,25 @@
 //   |        |
 
 class Surface {
-    constructor(amplitude, wavelengthX, noise, rotation) {
+    constructor(
+        amplitude,
+        wavelengthX,
+        noise,
+        rotation,
+        height = 500,
+        width = 500,
+        bins = 100
+    ) {
         //surface variables
         this.amplitude = amplitude;
         this.wavelengthX = wavelengthX;
         this.noise = noise;
         this.rotation = rotation;
-        //constants
 
-        this.width = 500;
-        this.height = 500;
-        this.bins = 100;
+        //constants
+        this.width = width;
+        this.height = height;
+        this.bins = bins;
 
         //Three.js objects
         this.mesh = this.generateSurface();
