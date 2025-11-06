@@ -433,18 +433,6 @@
                     step="0.1"
                 />
             </div>
-            <div class="slider-container">
-                <label>M Factor: <span id="m1-value">1.0</span></label>
-                <input
-                    type="range"
-                    class="slider"
-                    id="m1-slider"
-                    min="0.1"
-                    max="3.0"
-                    value="1.0"
-                    step="0.1"
-                />
-            </div>
         </div>
 
         <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -781,8 +769,8 @@
                 s1.normals,
                 s2.normals,
                 {
-                    k: (surfaceK + surface2K) / 2,
-                    M: (surfaceM + surface2M) / 2,
+                    k: surfaceK,
+                    M: surfaceM,
                 }
             );
 
@@ -980,17 +968,10 @@
             // Setup friction parameters panel event listeners
             const k1Slider = document.getElementById('k1-slider');
             const k1Value = document.getElementById('k1-value');
-            const m1Slider = document.getElementById('m1-slider');
-            const m1Value = document.getElementById('m1-value');
 
             k1Slider.addEventListener('input', e => {
                 surfaceK = parseFloat(e.target.value);
                 k1Value.textContent = e.target.value;
-            });
-
-            m1Slider.addEventListener('input', e => {
-                surfaceM = parseFloat(e.target.value);
-                m1Value.textContent = e.target.value;
             });
         </script>
     </body>

@@ -28,9 +28,7 @@
 //   - M           (default 1.0)
 //   - dTheta      (default 0)
 //   - taps        (default 256)
-//   - blurRadius  : integer bin radius for box blur before normalization (default 0 = off)
-//   - blurIters   : how many times to apply the blur (default 1)
-//
+
 // Implementation details:
 //   - The grid is a bins×bins Float32Array over [-1,1]^2 but we only accumulate
 //     and sample inside the unit disk. Sampling uses bilinear filtering.
@@ -112,8 +110,7 @@ class Friction {
             mus[i] =
                 this.k *
                 this._overlap1D(a, this.dTheta, this.taps) *
-                this.loadscaling *
-                this.M;
+                this.loadscaling;
         }
         this.directionalProfileCache = { angles: angles, mus: mus };
         return this.directionalProfileCache;
@@ -157,6 +154,22 @@ class Friction {
      * Build a bins×bins grid; optionally blur; then apply PEAK (L∞) normalization.
      * @returns {Float32Array} grid
      */
+    /**
+     * Builds a normalized 2D grid from sample points and weights within a unit disk.
+     *
+     * This method creates a discretized representation by binning sample points into a
+     * square grid and accumulating their weights. Samples outside the unit disk (radius 1)
+     * are ignored. The resulting grid is normalized using peak (L∞) normalization where
+     * the maximum value becomes 1.
+     *
+     * @param {Array<{x: number, y: number}>} samples - Array of sample points with x,y coordinates
+     * @param {Array<number>|null} weights - Optional array of weights for each sample.
+     *                                       If null or undefined, all samples get weight 1.0
+     * @param {number} bins - Number of bins per dimension (creates bins × bins grid)
+     * @returns {Float32Array} Normalized grid of size bins×bins stored in row-major order.
+     *                        Grid covers coordinate space [-1,1] × [-1,1] with peak normalization applied.
+     */
+
     _buildGrid(samples, weights, bins) {
         const grid = new Float32Array(bins * bins);
         const binSize = 2.0 / bins;
@@ -210,6 +223,22 @@ class Friction {
     /**
      * 1D overlap integral along direction uAngle, with surface2 rotated by dTheta.
      * Evaluates numerically: ∫_{t=-1}^{1} f1(t·u) · f2(-t·R(dθ)u) dt
+     */
+    /**
+     * Computes the 1D overlap integral between two normal distribution function (NDF) grids
+     * along a specified direction with angular offset.
+     *
+     * This method performs numerical integration by sampling both NDF grids along parallel
+     * lines and computing the product of their values. The integration is performed over
+     * a domain of [-1, 1] using uniform sampling.
+     *
+     * @param {number} uAngle - The angle (in radians) defining the integration direction
+     * @param {number} dTheta - The angular offset (in radians) between the two surfaces
+     * @param {number} taps - The number of sample points for numerical integration
+     * @returns {number} The computed overlap integral value, scaled by the integration step size
+     *
+     * @private
+     *
      */
     _overlap1D(uAngle, dTheta, taps) {
         const g1 = this.ndfGrid1,
