@@ -107,10 +107,7 @@ class Friction {
         for (let i = 0; i < this.numDirs; i++) {
             const a = (i / this.numDirs) * Math.PI * 2.0;
             angles[i] = a;
-            mus[i] =
-                this.k *
-                this._overlap1D(a, this.dTheta, this.taps) *
-                this.loadscaling;
+            mus[i] = this.k * this._overlap1D(a, this.taps) * this.loadscaling;
         }
         this.directionalProfileCache = { angles: angles, mus: mus };
         return this.directionalProfileCache;
@@ -220,50 +217,50 @@ class Friction {
         return c0 * (1 - ty) + c1 * ty;
     }
 
-    /**
-     * 1D overlap integral along direction uAngle, with surface2 rotated by dTheta.
-     * Evaluates numerically: ∫_{t=-1}^{1} f1(t·u) · f2(-t·R(dθ)u) dt
-     */
-    /**
-     * Computes the 1D overlap integral between two normal distribution function (NDF) grids
-     * along a specified direction with angular offset.
-     *
-     * This method performs numerical integration by sampling both NDF grids along parallel
-     * lines and computing the product of their values. The integration is performed over
-     * a domain of [-1, 1] using uniform sampling.
-     *
+    /***
+     * 1D overlap integral along direction uAngle, with surface2 .
+     * Evaluates numerically: ∫_{t=-1}^{1} f1(t·u) · f2(-t·u) dt
      * @param {number} uAngle - The angle (in radians) defining the integration direction
-     * @param {number} dTheta - The angular offset (in radians) between the two surfaces
      * @param {number} taps - The number of sample points for numerical integration
      * @returns {number} The computed overlap integral value, scaled by the integration step size
-     *
      * @private
-     *
      */
-    _overlap1D(uAngle, dTheta, taps) {
-        const g1 = this.ndfGrid1,
-            g2 = this.ndfGrid2;
-        const bins1 = this.bins,
-            bins2 = this.bins;
-        const ux = Math.cos(uAngle),
-            uy = Math.sin(uAngle);
-        const c = Math.cos(dTheta),
-            s = Math.sin(dTheta);
-        const u2x = c * ux - s * uy,
-            u2y = s * ux + c * uy;
-        const tMax = 1.0; // half-extent of integration domain
+
+    _overlap1D(uAngle, taps) {
+        const g1 = this.ndfGrid1;
+        const g2 = this.ndfGrid2;
+        const bins = this.bins;
+
+        // Direction from relative angle
+        const ux = Math.cos(uAngle);
+        const uy = Math.sin(uAngle);
+
+        const tMax = 1.0; // integration from -1 to 1
         const dt = (2 * tMax) / Math.max(1, taps - 1);
+
         let sum = 0.0;
         for (let i = 0; i < taps; i++) {
             const t = -tMax + i * dt;
-            const x1 = t * ux,
-                y1 = t * uy; // surface 1
-            const x2 = -t * u2x,
-                y2 = -t * u2y; // surface 2 (mirrored & rotated)
-            const f1 = this._sampleGrid(g1, bins1, x1, y1);
-            const f2 = this._sampleGrid(g2, bins2, x2, y2);
-            sum += f1 * f2;
+
+            // Surface 1: along +u
+            const x1 = t * ux;
+            const y1 = t * uy;
+
+            // Surface 2: mirrored along -u
+            const x2 = -t * ux; // = -t * ux
+            const y2 = -t * uy; // = -t * uy
+
+            const f1 = this._sampleGrid(g1, bins, x1, y1);
+            const f2 = this._sampleGrid(g2, bins, x2, y2);
+
+            // ---- Weighting: uphill vs downhill ----
+
+            // Assuming t in [-1, 1] because tMax = 1.0
+            const weight = 1.0 - t; // more weight for t<0, less for t>0
+
+            sum += weight * f1 * f2;
         }
+
         return sum * dt;
     }
 }
