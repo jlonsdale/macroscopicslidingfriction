@@ -14,24 +14,22 @@
 // ================================================================
 
 // Surface properties for individual surfaces
-const Surface1Properties = {
+
+Surface1Properties = {
     amplitude: 0.1,
-    wavelength: 10,
+    wavelength: 20,
     noise: 0.1,
     rotation: 0,
-    height: 500,
-    width: 500,
     bins: 100,
     anisotropic: true,
 };
 
-const Surface2Properties = {
+Surface2Properties = {
     amplitude: 0.1,
-    wavelength: 10,
+    wavelength: 20,
     noise: 0.1,
     rotation: 0,
-    height: 500,
-    width: 500,
+
     bins: 100,
     anisotropic: true,
 };
@@ -56,10 +54,14 @@ class SceneRenderer {
 
         this.cube = null;
         this.cubesize = 4;
+        Surface1Properties.width = this.cubesize;
+        Surface1Properties.height = this.cubesize;
 
         this.plane = null;
         this.planeWidth = 50;
         this.planeHeight = 20;
+        Surface2Properties.width = this.planeWidth;
+        Surface2Properties.height = this.planeHeight;
         this.startingAngle = 15;
 
         this.cameraControls = null;
@@ -79,7 +81,7 @@ class SceneRenderer {
             Surface1Properties.amplitude,
             Surface1Properties.wavelength,
             Surface1Properties.noise,
-            (Surface1Properties.rotation * Math.PI) / 180, // Convert degrees to radians
+            Surface1Properties.rotation,
             Surface1Properties.height,
             Surface1Properties.width,
             Surface1Properties.bins,
@@ -89,7 +91,7 @@ class SceneRenderer {
             Surface2Properties.amplitude,
             Surface2Properties.wavelength,
             Surface2Properties.noise,
-            (Surface2Properties.rotation * Math.PI) / 180, // Convert degrees to radians
+            Surface2Properties.rotation,
             Surface2Properties.height,
             Surface2Properties.width,
             Surface2Properties.bins,

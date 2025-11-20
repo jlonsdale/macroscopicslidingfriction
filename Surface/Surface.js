@@ -121,6 +121,8 @@ class Surface {
     }
 
     generateTexture(width, height) {
+        width *= 10;
+        height *= 10;
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
