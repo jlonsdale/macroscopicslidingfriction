@@ -1,6 +1,13 @@
 // Cube class - handles cube creation and properties
 class Cube {
-    constructor(position, size, staticFriction, kineticFriction, mass) {
+    constructor(
+        position,
+        size,
+        staticFriction,
+        kineticFriction,
+        mass,
+        texture = null
+    ) {
         this.velocity = new THREE.Vector3(0, 0, 0); // Initial velocity
         this.angularVelocity = new THREE.Vector3(0, 0, 0); // Initial angular velocity
         this.mass = mass; // Mass of the cube
@@ -54,7 +61,6 @@ class Cube {
         }
         this.kineticFriction = kineticFriction; // kinetic friction coefficient
 
-        this.mesh = null;
         const geometry = new THREE.BoxGeometry(size, size, size);
         const material = new THREE.MeshLambertMaterial({
             color: 0x00ff88,

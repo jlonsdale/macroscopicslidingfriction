@@ -26,6 +26,222 @@
             </button>
         </div>
 
+        <div class="control-panel surface-panel">
+            <h3>Surface Properties</h3>
+
+            <!-- Surface 1 Controls -->
+            <h4 class="surface-title">Surface 1 (Cube)</h4>
+
+            <div class="control-group">
+                <label for="surface1Size">Size:</label>
+                <div class="slider-container">
+                    <input
+                        type="range"
+                        id="surface1Size"
+                        min="50"
+                        max="200"
+                        step="10"
+                        value="100"
+                    />
+                    <div class="slider-value" id="surface1SizeValue">100</div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="surface1Bins">Bins:</label>
+                <div class="slider-container">
+                    <input
+                        type="range"
+                        id="surface1Bins"
+                        min="50"
+                        max="200"
+                        step="10"
+                        value="100"
+                    />
+                    <div class="slider-value" id="surface1BinsValue">100</div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="surface1Anisotropic">Anisotropic:</label>
+                <input type="checkbox" id="surface1Anisotropic" checked />
+            </div>
+
+            <div class="control-group">
+                <label for="surface1Roughness">Roughness:</label>
+                <div class="slider-container">
+                    <input
+                        type="range"
+                        id="surface1Roughness"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value="0"
+                    />
+                    <div class="slider-value" id="surface1RoughnessValue">
+                        0.00
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="surface1Wavelength">Wavelength:</label>
+                <div class="slider-container">
+                    <input
+                        type="range"
+                        id="surface1Wavelength"
+                        min="1"
+                        max="50"
+                        step="1"
+                        value="10"
+                    />
+                    <div class="slider-value" id="surface1WavelengthValue">
+                        10
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="surface1Angle">Angle:</label>
+                <div class="slider-container">
+                    <input
+                        type="range"
+                        id="surface1Angle"
+                        min="0"
+                        max="360"
+                        step="5"
+                        value="0"
+                    />
+                    <div class="slider-value" id="surface1AngleValue">0°</div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="surface1Amplitude">Amplitude:</label>
+                <div class="slider-container">
+                    <input
+                        type="range"
+                        id="surface1Amplitude"
+                        min="0"
+                        max="10"
+                        step="0.1"
+                        value="0"
+                    />
+                    <div class="slider-value" id="surface1AmplitudeValue">
+                        0.0
+                    </div>
+                </div>
+            </div>
+
+            <!-- Surface 2 Controls -->
+            <h4 class="surface-title">Surface 2 (Plane)</h4>
+
+            <div class="control-group">
+                <label for="surface2Size">Size:</label>
+                <div class="slider-container">
+                    <input
+                        type="range"
+                        id="surface2Size"
+                        min="50"
+                        max="200"
+                        step="10"
+                        value="100"
+                    />
+                    <div class="slider-value" id="surface2SizeValue">100</div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="surface2Bins">Bins:</label>
+                <div class="slider-container">
+                    <input
+                        type="range"
+                        id="surface2Bins"
+                        min="50"
+                        max="200"
+                        step="10"
+                        value="100"
+                    />
+                    <div class="slider-value" id="surface2BinsValue">100</div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="surface2Anisotropic">Anisotropic:</label>
+                <input type="checkbox" id="surface2Anisotropic" checked />
+            </div>
+
+            <div class="control-group">
+                <label for="surface2Roughness">Roughness:</label>
+                <div class="slider-container">
+                    <input
+                        type="range"
+                        id="surface2Roughness"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value="0"
+                    />
+                    <div class="slider-value" id="surface2RoughnessValue">
+                        0.00
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="surface2Wavelength">Wavelength:</label>
+                <div class="slider-container">
+                    <input
+                        type="range"
+                        id="surface2Wavelength"
+                        min="1"
+                        max="50"
+                        step="1"
+                        value="10"
+                    />
+                    <div class="slider-value" id="surface2WavelengthValue">
+                        10
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="surface2Angle">Angle:</label>
+                <div class="slider-container">
+                    <input
+                        type="range"
+                        id="surface2Angle"
+                        min="0"
+                        max="360"
+                        step="5"
+                        value="0"
+                    />
+                    <div class="slider-value" id="surface2AngleValue">0°</div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="surface2Amplitude">Amplitude:</label>
+                <div class="slider-container">
+                    <input
+                        type="range"
+                        id="surface2Amplitude"
+                        min="0"
+                        max="10"
+                        step="0.1"
+                        value="0"
+                    />
+                    <div class="slider-value" id="surface2AmplitudeValue">
+                        0.0
+                    </div>
+                </div>
+            </div>
+
+            <button id="applySurfacePropertiesBtn">
+                Apply Surface Changes
+            </button>
+        </div>
+
         <div class="control-panel-right">
             <h3>Cube Properties</h3>
 
@@ -181,10 +397,256 @@
         <script src="rigidbodysimGS.js"></script>
         <script src="camera-controls.js"></script>
         <script src="scene.js"></script>
+        <script src="./Surface/Friction.js"></script>
+        <script src="./Surface/Surface.js"></script>
 
         <!-- Surface Controls Value Updates -->
         <script>
             document.addEventListener('DOMContentLoaded', function () {
+                // Surface Properties Controls
+                function setupSurfaceControls() {
+                    // Surface 1 Controls
+                    const surface1Controls = {
+                        size: {
+                            slider: document.getElementById('surface1Size'),
+                            value: document.getElementById('surface1SizeValue'),
+                        },
+                        bins: {
+                            slider: document.getElementById('surface1Bins'),
+                            value: document.getElementById('surface1BinsValue'),
+                        },
+                        roughness: {
+                            slider: document.getElementById(
+                                'surface1Roughness'
+                            ),
+                            value: document.getElementById(
+                                'surface1RoughnessValue'
+                            ),
+                        },
+                        wavelength: {
+                            slider: document.getElementById(
+                                'surface1Wavelength'
+                            ),
+                            value: document.getElementById(
+                                'surface1WavelengthValue'
+                            ),
+                        },
+                        angle: {
+                            slider: document.getElementById('surface1Angle'),
+                            value: document.getElementById(
+                                'surface1AngleValue'
+                            ),
+                        },
+                        amplitude: {
+                            slider: document.getElementById(
+                                'surface1Amplitude'
+                            ),
+                            value: document.getElementById(
+                                'surface1AmplitudeValue'
+                            ),
+                        },
+                    };
+
+                    // Surface 2 Controls
+                    const surface2Controls = {
+                        size: {
+                            slider: document.getElementById('surface2Size'),
+                            value: document.getElementById('surface2SizeValue'),
+                        },
+                        bins: {
+                            slider: document.getElementById('surface2Bins'),
+                            value: document.getElementById('surface2BinsValue'),
+                        },
+                        roughness: {
+                            slider: document.getElementById(
+                                'surface2Roughness'
+                            ),
+                            value: document.getElementById(
+                                'surface2RoughnessValue'
+                            ),
+                        },
+                        wavelength: {
+                            slider: document.getElementById(
+                                'surface2Wavelength'
+                            ),
+                            value: document.getElementById(
+                                'surface2WavelengthValue'
+                            ),
+                        },
+                        angle: {
+                            slider: document.getElementById('surface2Angle'),
+                            value: document.getElementById(
+                                'surface2AngleValue'
+                            ),
+                        },
+                        amplitude: {
+                            slider: document.getElementById(
+                                'surface2Amplitude'
+                            ),
+                            value: document.getElementById(
+                                'surface2AmplitudeValue'
+                            ),
+                        },
+                    };
+
+                    // Setup event listeners for Surface 1
+                    Object.keys(surface1Controls).forEach(key => {
+                        const control = surface1Controls[key];
+                        if (control.slider && control.value) {
+                            control.slider.addEventListener(
+                                'input',
+                                function () {
+                                    let displayValue = this.value;
+                                    if (key === 'angle') {
+                                        displayValue = this.value + '°';
+                                    } else if (
+                                        key === 'roughness' ||
+                                        key === 'amplitude'
+                                    ) {
+                                        displayValue = parseFloat(
+                                            this.value
+                                        ).toFixed(2);
+                                    }
+                                    control.value.textContent = displayValue;
+                                    updateSurfaceProperties();
+                                }
+                            );
+                        }
+                    });
+
+                    // Setup event listeners for Surface 2
+                    Object.keys(surface2Controls).forEach(key => {
+                        const control = surface2Controls[key];
+                        if (control.slider && control.value) {
+                            control.slider.addEventListener(
+                                'input',
+                                function () {
+                                    let displayValue = this.value;
+                                    if (key === 'angle') {
+                                        displayValue = this.value + '°';
+                                    } else if (
+                                        key === 'roughness' ||
+                                        key === 'amplitude'
+                                    ) {
+                                        displayValue = parseFloat(
+                                            this.value
+                                        ).toFixed(2);
+                                    }
+                                    control.value.textContent = displayValue;
+                                    updateSurfaceProperties();
+                                }
+                            );
+                        }
+                    });
+
+                    // Anisotropic checkboxes
+                    const surface1Anisotropic = document.getElementById(
+                        'surface1Anisotropic'
+                    );
+                    const surface2Anisotropic = document.getElementById(
+                        'surface2Anisotropic'
+                    );
+
+                    if (surface1Anisotropic) {
+                        surface1Anisotropic.addEventListener(
+                            'change',
+                            updateSurfaceProperties
+                        );
+                    }
+
+                    if (surface2Anisotropic) {
+                        surface2Anisotropic.addEventListener(
+                            'change',
+                            updateSurfaceProperties
+                        );
+                    }
+
+                    // Apply button
+                    const applyBtn = document.getElementById(
+                        'applySurfacePropertiesBtn'
+                    );
+                    if (applyBtn) {
+                        applyBtn.addEventListener(
+                            'click',
+                            applySurfaceProperties
+                        );
+                    }
+                }
+
+                function updateSurfaceProperties() {
+                    // Update the global SurfaceProperties objects
+                    if (typeof sceneRenderer !== 'undefined' && sceneRenderer) {
+                        sceneRenderer.updateSurfaceProperties(
+                            getSurface1Properties(),
+                            getSurface2Properties()
+                        );
+                    }
+                }
+
+                function getSurface1Properties() {
+                    return {
+                        size: parseInt(
+                            document.getElementById('surface1Size').value
+                        ),
+                        bins: parseInt(
+                            document.getElementById('surface1Bins').value
+                        ),
+                        anisotropic: document.getElementById(
+                            'surface1Anisotropic'
+                        ).checked,
+                        noise: parseFloat(
+                            document.getElementById('surface1Roughness').value
+                        ),
+                        wavelength: parseInt(
+                            document.getElementById('surface1Wavelength').value
+                        ),
+                        rotation: parseInt(
+                            document.getElementById('surface1Angle').value
+                        ),
+                        amplitude: parseFloat(
+                            document.getElementById('surface1Amplitude').value
+                        ),
+                    };
+                }
+
+                function getSurface2Properties() {
+                    return {
+                        size: parseInt(
+                            document.getElementById('surface2Size').value
+                        ),
+                        bins: parseInt(
+                            document.getElementById('surface2Bins').value
+                        ),
+                        anisotropic: document.getElementById(
+                            'surface2Anisotropic'
+                        ).checked,
+                        noise: parseFloat(
+                            document.getElementById('surface2Roughness').value
+                        ),
+                        wavelength: parseInt(
+                            document.getElementById('surface2Wavelength').value
+                        ),
+                        rotation: parseInt(
+                            document.getElementById('surface2Angle').value
+                        ),
+                        amplitude: parseFloat(
+                            document.getElementById('surface2Amplitude').value
+                        ),
+                    };
+                }
+
+                function applySurfaceProperties() {
+                    if (typeof sceneRenderer !== 'undefined' && sceneRenderer) {
+                        sceneRenderer.applySurfaceProperties(
+                            getSurface1Properties(),
+                            getSurface2Properties()
+                        );
+                    }
+                }
+
+                // Initialize surface controls
+                setupSurfaceControls();
+
                 // Sine controls value displays
                 const sineAmplitude = document.getElementById('sineAmplitude');
                 const sineAmplitudeValue =

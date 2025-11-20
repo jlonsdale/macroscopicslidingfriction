@@ -187,3 +187,81 @@ body {
 .control-panel-right button:hover {
     background: #4caf50;
 }
+
+/* Surface Properties Panel */
+.surface-panel {
+    position: absolute;
+    top: 200px;
+    left: 15px;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 6px;
+    padding: 6px;
+    width: 150px;
+    font-family: Arial, sans-serif;
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+}
+
+.surface-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.surface-panel::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.surface-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.surface-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.surface-title {
+    color: #ffd700;
+    margin: 8px 0 4px 0;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 1px solid #ffd700;
+    padding-bottom: 2px;
+}
+
+.surface-panel .control-group {
+    margin-bottom: 3px;
+}
+
+.surface-panel .control-group label {
+    color: white;
+    display: inline-block;
+    margin-bottom: 1px;
+    font-size: 9px;
+    width: 60%;
+}
+
+.surface-panel input[type='checkbox'] {
+    margin-left: 5px;
+    transform: scale(0.8);
+}
+
+.surface-panel button {
+    width: 100%;
+    padding: 6px;
+    margin: 8px 0 4px 0;
+    border: none;
+    border-radius: 3px;
+    background: #ff9800;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.1s;
+}
+
+.surface-panel button:hover {
+    background: #f57c00;
+}

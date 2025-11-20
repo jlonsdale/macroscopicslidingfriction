@@ -24,23 +24,36 @@
 class Surface {
     constructor(
         amplitude,
-        wavelengthX,
+        wavelength,
         noise,
         rotation,
         height = 500,
         width = 500,
-        bins = 100
+        bins = 100,
+        anisotropic = true
     ) {
         //surface variables
         this.amplitude = amplitude;
-        this.wavelengthX = wavelengthX;
+        this.wavelength = wavelength;
         this.noise = noise;
         this.rotation = rotation;
+        this.isAnisotropic = anisotropic;
 
         //constants
         this.width = width;
         this.height = height;
         this.bins = bins;
+
+        console.log('Surface parameters:', {
+            amplitude: this.amplitude,
+            wavelength: this.wavelength,
+            noise: this.noise,
+            rotation: this.rotation,
+            isAnisotropic: this.isAnisotropic,
+            width: this.width,
+            height: this.height,
+            bins: this.bins,
+        });
 
         //Three.js objects
         this.mesh = this.generateSurface();
@@ -60,21 +73,34 @@ class Surface {
             100,
             100
         );
+
         const vertices = geometry.attributes.position.array;
         for (let i = 0; i < vertices.length; i += 3) {
             const x = vertices[i];
             const y = vertices[i + 1];
+            if (!this.isAnisotropic) {
+                // Isotropic surface: waves in multiple directions
+                const waveX =
+                    this.amplitude *
+                    Math.sin(((2 * Math.PI) / this.wavelength) * x);
+                const waveY =
+                    this.amplitude *
+                    Math.sin(((2 * Math.PI) / this.wavelength) * y);
+                const wave = (waveX + waveY) / 2;
+                vertices[i + 2] = wave;
+                vertices[i + 2] += (Math.random() - 0.5) * this.noise;
+            } else {
+                // Apply rotation to the coordinate system before calculating the wavfe
+                const cosR = Math.cos(this.rotation);
+                const sinR = Math.sin(this.rotation);
+                const rotatedX = x * cosR - y * sinR;
 
-            // Apply rotation to the coordinate system before calculating the wave
-            const cosR = Math.cos(this.rotation);
-            const sinR = Math.sin(this.rotation);
-            const rotatedX = x * cosR - y * sinR;
-
-            const wave =
-                this.amplitude *
-                Math.sin(((2 * Math.PI) / this.wavelengthX) * rotatedX);
-            vertices[i + 2] = wave;
-            vertices[i + 2] += (Math.random() - 0.5) * this.noise;
+                const wave =
+                    this.amplitude *
+                    Math.sin(((2 * Math.PI) / this.wavelength) * rotatedX);
+                vertices[i + 2] = wave;
+                vertices[i + 2] += (Math.random() - 0.5) * this.noise;
+            }
         }
 
         geometry.attributes.position.needsUpdate = true;
@@ -116,7 +142,7 @@ class Surface {
 
                 const wave =
                     this.amplitude *
-                    Math.sin(((2 * Math.PI) / this.wavelengthX) * rotatedNormX);
+                    Math.sin(((2 * Math.PI) / this.wavelength) * rotatedNormX);
 
                 // Create more interesting texture with height-based coloring
                 const height = wave + (Math.random() - 0.5) * this.noise;
@@ -337,5 +363,22 @@ class Surface {
             plotEl.innerHTML = '';
             plotEl.appendChild(displayCanvas);
         }
+    }
+
+    // Method to update surface properties and regenerate the surface
+    updateProperties(properties) {
+        console.log('Updating surface properties:', properties);
+        //surface variables
+        this.amplitude = properties.amplitude;
+        this.wavelength = properties.wavelength;
+        this.noise = properties.noise;
+        this.rotation = properties.rotation;
+        this.isAnisotropic = properties.anisotropic;
+
+        // Regenerate the surface with new properties
+        this.mesh = this.generateSurface();
+        this.texture = this.generateTexture(this.width, this.height);
+
+        console.log('Surface updated with properties:', properties);
     }
 }

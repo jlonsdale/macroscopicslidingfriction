@@ -13,6 +13,29 @@
 // SCENE RENDERER CLASS - Main 3D Scene Management
 // ================================================================
 
+// Surface properties for individual surfaces
+const Surface1Properties = {
+    amplitude: 5,
+    wavelength: 10,
+    noise: 1,
+    rotation: 2,
+    height: 500,
+    width: 500,
+    bins: 100,
+    anisotropic: true,
+};
+
+const Surface2Properties = {
+    amplitude: 5,
+    wavelength: 10,
+    noise: 1,
+    rotation: 2,
+    height: 500,
+    width: 500,
+    bins: 100,
+    anisotropic: true,
+};
+
 class SceneRenderer {
     constructor() {
         this.initializeProperties();
@@ -46,6 +69,33 @@ class SceneRenderer {
         // State properties
         this.logging = false;
         this.paused = false;
+
+        // Friction Engine
+        this.surface1 = new Surface(
+            Surface1Properties.amplitude,
+            Surface1Properties.wavelength,
+            Surface1Properties.noise,
+            (Surface1Properties.rotation * Math.PI) / 180, // Convert degrees to radians
+            Surface1Properties.height,
+            Surface1Properties.width,
+            Surface1Properties.bins,
+            Surface1Properties.anisotropic
+        );
+        this.surface2 = new Surface(
+            Surface2Properties.amplitude,
+            Surface2Properties.wavelength,
+            Surface2Properties.noise,
+            (Surface2Properties.rotation * Math.PI) / 180, // Convert degrees to radians
+            Surface2Properties.height,
+            Surface2Properties.width,
+            Surface2Properties.bins,
+            Surface2Properties.anisotropic
+        );
+        this.tex1 = this.surface1.texture;
+
+        this.tex2 = this.surface2.texture;
+
+        this.friction = new Friction(this.surface1, this.surface2);
     }
 
     initializeScene() {
@@ -104,14 +154,12 @@ class SceneRenderer {
 
     setupPhysics() {
         this.rigidBodySim = new RigidBodySimScene(this.cube, this.plane);
-    }
-
-    // ================================================================
+    } // ================================================================
     // SCENE OBJECT MANAGEMENT
     // ================================================================
 
     addPlane() {
-        const plane = new Plane(this.startingAngle, this.planetexangle);
+        const plane = new Plane(this.startingAngle, this.tex2);
         this.plane = plane;
         const planeMesh = plane.getMesh();
         this.scene.add(planeMesh);
@@ -125,7 +173,8 @@ class SceneRenderer {
             size,
             staticFriction,
             kineticFriction,
-            this.mass
+            this.mass,
+            this.tex1
         );
         this.cube = cube;
         const cubeMesh = cube.getMesh();
@@ -178,6 +227,38 @@ class SceneRenderer {
 
     updatePlaneTextureRotation(angle) {
         this.planetexangle = angle;
+    }
+
+    updateSurfaceProperties(surface1Props, surface2Props) {
+        // Update the global surface property objects
+        Object.assign(Surface1Properties, surface1Props);
+        Object.assign(Surface2Properties, surface2Props);
+
+        console.log('Surface properties updated:', {
+            surface1: Surface1Properties,
+            surface2: Surface2Properties,
+        });
+    }
+
+    applySurfaceProperties(surface1Props, surface2Props) {
+        // Update properties first
+        this.updateSurfaceProperties(surface1Props, surface2Props);
+
+        if (this.surface2) {
+            this.surface2.updateProperties(surface2Props);
+            this.tex2 = this.surface2.texture;
+
+            // Apply updated texture to plane if it exists
+            if (this.plane && this.plane.getMesh()) {
+                const planeMesh = this.plane.getMesh();
+                if (planeMesh.material && this.tex2) {
+                    planeMesh.material.map = this.tex2;
+                    planeMesh.material.needsUpdate = true;
+                }
+            }
+        }
+
+        console.log('Surface properties applied to simulation');
     }
 
     // ================================================================
@@ -320,58 +401,4 @@ if (resetSceneBtn && angleSelect) {
         const selectedAngle = parseFloat(angleSelect.value);
         resetScene(selectedAngle);
     });
-}
-
-// Friction Controls
-const staticFrictionSlider = document.getElementById('staticFrictionSlider');
-const staticFrictionValue = document.getElementById('staticFrictionValue');
-const kineticFrictionSlider = document.getElementById('kineticFrictionSlider');
-const kineticFrictionValue = document.getElementById('kineticFrictionValue');
-
-if (staticFrictionSlider && staticFrictionValue) {
-    staticFrictionSlider.addEventListener('input', () => {
-        const value = parseFloat(staticFrictionSlider.value);
-        staticFrictionValue.textContent = value.toFixed(2);
-        if (sceneRenderer) {
-            sceneRenderer.updateFrictionValues(
-                value,
-                sceneRenderer.kineticFriction
-            );
-        }
-    });
-    // Initialize display
-    staticFrictionValue.textContent = parseFloat(
-        staticFrictionSlider.value
-    ).toFixed(2);
-}
-
-if (kineticFrictionSlider && kineticFrictionValue) {
-    kineticFrictionSlider.addEventListener('input', () => {
-        const value = parseFloat(kineticFrictionSlider.value);
-        kineticFrictionValue.textContent = value.toFixed(2);
-        if (sceneRenderer) {
-            sceneRenderer.updateFrictionValues(
-                sceneRenderer.staticFriction,
-                value
-            );
-        }
-    });
-    // Initialize display
-    kineticFrictionValue.textContent = parseFloat(
-        kineticFrictionSlider.value
-    ).toFixed(2);
-}
-
-// Texture Rotation Controls
-const textureRotationSlider = document.getElementById('textureRotationSlider');
-const textureRotationValue = document.getElementById('textureRotationValue');
-
-if (textureRotationSlider && textureRotationValue) {
-    textureRotationSlider.addEventListener('input', () => {
-        const rotation = parseInt(textureRotationSlider.value);
-        textureRotationValue.textContent = rotation + '°';
-        sceneRenderer.planetexangle = rotation;
-    });
-    // Initialize display
-    textureRotationValue.textContent = textureRotationSlider.value + '°';
 }

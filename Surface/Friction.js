@@ -263,4 +263,21 @@ class Friction {
 
         return sum * dt;
     }
+
+    /**
+     * Update the friction model with new surface objects
+     * @param {Surface} surface1 - The first surface object
+     * @param {Surface} surface2 - The second surface object
+     */
+    updateSurfaces(surface1, surface2) {
+        this.surface1 = surface1;
+        this.surface2 = surface2;
+
+        // Rebuild the friction model if surfaces have NDF data
+        if (surface1 && surface2) {
+            // This would need to be implemented based on how the surfaces
+            // provide their NDF samples and area weights
+            console.log('Friction model surfaces updated');
+        }
+    }
 }
