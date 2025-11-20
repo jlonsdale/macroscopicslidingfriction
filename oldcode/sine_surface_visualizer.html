@@ -154,8 +154,8 @@
                 amplitude: 2.0,
                 wavelengthX: 18.0,
                 phaseX: 0.0,
-                roughness: 0.3,
-                roughnessScale: 50.0,
+                noise: 0.3,
+                noiseScale: 50.0,
                 animateWaves: false,
                 speed: 0.6,
                 colorize: true,
@@ -178,7 +178,7 @@
             const mat = new THREE.MeshStandardMaterial({
                 color: 0xffffff,
                 metalness: 0.0,
-                roughness: 0.95,
+                noise: 0.95,
                 side: THREE.DoubleSide,
                 wireframe: params.wireframe,
                 vertexColors: true,
@@ -201,8 +201,7 @@
             function applyHeights(phaseX = params.phaseX) {
                 let minH = Infinity,
                     maxH = -Infinity;
-                const { amplitude, wavelengthX, roughness, roughnessScale } =
-                    params;
+                const { amplitude, wavelengthX, noise, noiseScale } = params;
                 const kx = (2 * Math.PI) / Math.max(1e-6, wavelengthX);
 
                 for (let i = 0; i < N; i++) {
@@ -212,12 +211,12 @@
                     // Primary sine wave
                     let y = amplitude * Math.sin(kx * x + phaseX);
 
-                    // Add roughness using multiple frequency components
-                    if (roughness > 0) {
+                    // Add noise using multiple frequency components
+                    if (noise > 0) {
                         // High frequency noise
-                        const noiseFreq1 = roughnessScale * 0.5;
-                        const noiseFreq2 = roughnessScale * 1.2;
-                        const noiseFreq3 = roughnessScale * 2.8;
+                        const noiseFreq1 = noiseScale * 0.5;
+                        const noiseFreq2 = noiseScale * 1.2;
+                        const noiseFreq3 = noiseScale * 2.8;
 
                         const noise1 = Math.sin(
                             noiseFreq1 * x + noiseFreq1 * z * 0.3
@@ -230,11 +229,11 @@
                         );
 
                         // Combine noise with decreasing amplitude
-                        const roughnessValue =
-                            roughness *
+                        const noiseValue =
+                            noise *
                             (0.5 * noise1 + 0.3 * noise2 + 0.2 * noise3);
 
-                        y += roughnessValue;
+                        y += noiseValue;
                     }
 
                     pos.setY(i, y);
@@ -270,11 +269,11 @@
             gui.add(params, 'phaseX', 0.0, Math.PI * 2, 0.01)
                 .name('Phase X')
                 .onChange(() => applyHeights());
-            gui.add(params, 'roughness', 0.0, 2.0, 0.05)
-                .name('Roughness')
+            gui.add(params, 'noise', 0.0, 2.0, 0.05)
+                .name('noise')
                 .onChange(() => applyHeights());
-            gui.add(params, 'roughnessScale', 10.0, 200.0, 5.0)
-                .name('Roughness Scale')
+            gui.add(params, 'noiseScale', 10.0, 200.0, 5.0)
+                .name('noise Scale')
                 .onChange(() => applyHeights());
             gui.add(params, 'resolution', 16, 1024, 16)
                 .name('Resolution')

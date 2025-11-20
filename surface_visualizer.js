@@ -59,8 +59,8 @@ class SurfaceVisualizer {
                 amplitude: 1.0,
                 wavelengthX: 18.0,
                 phaseX: 0.0,
-                roughness: 0.3,
-                roughnessScale: 50.0,
+                noise: 0.3,
+                noiseScale: 50.0,
             },
             noise: {
                 amplitude: 3.0,
@@ -100,9 +100,8 @@ class SurfaceVisualizer {
         // Sine controls
         const sineAmplitude = document.getElementById('sineAmplitude');
         const sineWavelengthX = document.getElementById('sineWavelengthX');
-        const sineRoughness = document.getElementById('sineRoughness');
-        const sineRoughnessScale =
-            document.getElementById('sineRoughnessScale');
+        const sinenoise = document.getElementById('sinenoise');
+        const sinenoiseScale = document.getElementById('sinenoiseScale');
 
         if (sineAmplitude) {
             sineAmplitude.addEventListener('input', e => {
@@ -116,15 +115,15 @@ class SurfaceVisualizer {
                 this.updateSineAndHistogram();
             });
         }
-        if (sineRoughness) {
-            sineRoughness.addEventListener('input', e => {
-                this.params.sine.roughness = parseFloat(e.target.value);
+        if (sinenoise) {
+            sinenoise.addEventListener('input', e => {
+                this.params.sine.noise = parseFloat(e.target.value);
                 this.updateSineAndHistogram();
             });
         }
-        if (sineRoughnessScale) {
-            sineRoughnessScale.addEventListener('input', e => {
-                this.params.sine.roughnessScale = parseFloat(e.target.value);
+        if (sinenoiseScale) {
+            sinenoiseScale.addEventListener('input', e => {
+                this.params.sine.noiseScale = parseFloat(e.target.value);
                 this.updateSineAndHistogram();
             });
         }
@@ -168,7 +167,7 @@ class SurfaceVisualizer {
         this.mat = new THREE.MeshStandardMaterial({
             color: 0xffffff,
             metalness: 0.0,
-            roughness: 0.95,
+            noise: 0.95,
             side: THREE.DoubleSide,
             wireframe: this.params.wireframe,
             vertexColors: true,
@@ -216,8 +215,7 @@ class SurfaceVisualizer {
     applySineHeights(phaseX = this.params.sine.phaseX) {
         let minH = Infinity,
             maxH = -Infinity;
-        const { amplitude, wavelengthX, roughness, roughnessScale } =
-            this.params.sine;
+        const { amplitude, wavelengthX, noise, noiseScale } = this.params.sine;
         const kx = (2 * Math.PI) / Math.max(1e-6, wavelengthX);
 
         for (let i = 0; i < this.N; i++) {
@@ -226,14 +224,14 @@ class SurfaceVisualizer {
 
             let y = amplitude * Math.sin(kx * x + phaseX);
 
-            if (roughness > 0) {
-                const nf1 = roughnessScale * 0.5;
-                const nf2 = roughnessScale * 1.2;
-                const nf3 = roughnessScale * 2.8;
+            if (noise > 0) {
+                const nf1 = noiseScale * 0.5;
+                const nf2 = noiseScale * 1.2;
+                const nf3 = noiseScale * 2.8;
                 const n1 = Math.sin(nf1 * x + nf1 * z * 0.3);
                 const n2 = Math.sin(nf2 * x * 0.7 + nf2 * z);
                 const n3 = Math.sin(nf3 * x * 0.4 + nf3 * z * 0.6);
-                y += roughness * (0.5 * n1 + 0.3 * n2 + 0.2 * n3);
+                y += noise * (0.5 * n1 + 0.3 * n2 + 0.2 * n3);
             }
 
             this.pos.setY(i, y);

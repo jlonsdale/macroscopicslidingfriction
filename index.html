@@ -68,19 +68,17 @@
             </div>
 
             <div class="control-group">
-                <label for="surface1Roughness">Roughness:</label>
+                <label for="surface1noise">noise:</label>
                 <div class="slider-container">
                     <input
                         type="range"
-                        id="surface1Roughness"
-                        min="0"
+                        id="surface1noise"
+                        min="0.1"
                         max="1"
                         step="0.05"
-                        value="0"
+                        value="0.1"
                     />
-                    <div class="slider-value" id="surface1RoughnessValue">
-                        0.00
-                    </div>
+                    <div class="slider-value" id="surface1noiseValue">0.10</div>
                 </div>
             </div>
 
@@ -103,17 +101,33 @@
 
             <div class="control-group">
                 <label for="surface1Angle">Angle:</label>
-                <div class="slider-container">
-                    <input
-                        type="range"
-                        id="surface1Angle"
-                        min="0"
-                        max="360"
-                        step="5"
-                        value="0"
-                    />
-                    <div class="slider-value" id="surface1AngleValue">0°</div>
-                </div>
+                <select id="surface1Angle">
+                    <option value="0" selected>0°</option>
+                    <option value="15">15°</option>
+                    <option value="30">30°</option>
+                    <option value="45">45°</option>
+                    <option value="60">60°</option>
+                    <option value="75">75°</option>
+                    <option value="90">90°</option>
+                    <option value="105">105°</option>
+                    <option value="120">120°</option>
+                    <option value="135">135°</option>
+                    <option value="150">150°</option>
+                    <option value="165">165°</option>
+                    <option value="180">180°</option>
+                    <option value="195">195°</option>
+                    <option value="210">210°</option>
+                    <option value="225">225°</option>
+                    <option value="240">240°</option>
+                    <option value="255">255°</option>
+                    <option value="270">270°</option>
+                    <option value="285">285°</option>
+                    <option value="300">300°</option>
+                    <option value="315">315°</option>
+                    <option value="330">330°</option>
+                    <option value="345">345°</option>
+                    <option value="360">360°</option>
+                </select>
             </div>
 
             <div class="control-group">
@@ -122,13 +136,13 @@
                     <input
                         type="range"
                         id="surface1Amplitude"
-                        min="0"
+                        min="0.1"
                         max="10"
                         step="0.1"
-                        value="0"
+                        value="0.1"
                     />
                     <div class="slider-value" id="surface1AmplitudeValue">
-                        0.0
+                        0.1
                     </div>
                 </div>
             </div>
@@ -172,19 +186,17 @@
             </div>
 
             <div class="control-group">
-                <label for="surface2Roughness">Roughness:</label>
+                <label for="surface2noise">noise:</label>
                 <div class="slider-container">
                     <input
                         type="range"
-                        id="surface2Roughness"
-                        min="0"
+                        id="surface2noise"
+                        min="0.1"
                         max="1"
                         step="0.05"
-                        value="0"
+                        value="0.1"
                     />
-                    <div class="slider-value" id="surface2RoughnessValue">
-                        0.00
-                    </div>
+                    <div class="slider-value" id="surface2noiseValue">0.10</div>
                 </div>
             </div>
 
@@ -207,17 +219,33 @@
 
             <div class="control-group">
                 <label for="surface2Angle">Angle:</label>
-                <div class="slider-container">
-                    <input
-                        type="range"
-                        id="surface2Angle"
-                        min="0"
-                        max="360"
-                        step="5"
-                        value="0"
-                    />
-                    <div class="slider-value" id="surface2AngleValue">0°</div>
-                </div>
+                <select id="surface2Angle">
+                    <option value="0" selected>0°</option>
+                    <option value="15">15°</option>
+                    <option value="30">30°</option>
+                    <option value="45">45°</option>
+                    <option value="60">60°</option>
+                    <option value="75">75°</option>
+                    <option value="90">90°</option>
+                    <option value="105">105°</option>
+                    <option value="120">120°</option>
+                    <option value="135">135°</option>
+                    <option value="150">150°</option>
+                    <option value="165">165°</option>
+                    <option value="180">180°</option>
+                    <option value="195">195°</option>
+                    <option value="210">210°</option>
+                    <option value="225">225°</option>
+                    <option value="240">240°</option>
+                    <option value="255">255°</option>
+                    <option value="270">270°</option>
+                    <option value="285">285°</option>
+                    <option value="300">300°</option>
+                    <option value="315">315°</option>
+                    <option value="330">330°</option>
+                    <option value="345">345°</option>
+                    <option value="360">360°</option>
+                </select>
             </div>
 
             <div class="control-group">
@@ -226,13 +254,13 @@
                     <input
                         type="range"
                         id="surface2Amplitude"
-                        min="0"
+                        min="0.1"
                         max="10"
                         step="0.1"
-                        value="0"
+                        value="0.1"
                     />
                     <div class="slider-value" id="surface2AmplitudeValue">
-                        0.0
+                        0.1
                     </div>
                 </div>
             </div>
@@ -415,12 +443,10 @@
                             slider: document.getElementById('surface1Bins'),
                             value: document.getElementById('surface1BinsValue'),
                         },
-                        roughness: {
-                            slider: document.getElementById(
-                                'surface1Roughness'
-                            ),
+                        noise: {
+                            slider: document.getElementById('surface1noise'),
                             value: document.getElementById(
-                                'surface1RoughnessValue'
+                                'surface1noiseValue'
                             ),
                         },
                         wavelength: {
@@ -429,12 +455,6 @@
                             ),
                             value: document.getElementById(
                                 'surface1WavelengthValue'
-                            ),
-                        },
-                        angle: {
-                            slider: document.getElementById('surface1Angle'),
-                            value: document.getElementById(
-                                'surface1AngleValue'
                             ),
                         },
                         amplitude: {
@@ -457,12 +477,10 @@
                             slider: document.getElementById('surface2Bins'),
                             value: document.getElementById('surface2BinsValue'),
                         },
-                        roughness: {
-                            slider: document.getElementById(
-                                'surface2Roughness'
-                            ),
+                        noise: {
+                            slider: document.getElementById('surface2noise'),
                             value: document.getElementById(
-                                'surface2RoughnessValue'
+                                'surface2noiseValue'
                             ),
                         },
                         wavelength: {
@@ -471,12 +489,6 @@
                             ),
                             value: document.getElementById(
                                 'surface2WavelengthValue'
-                            ),
-                        },
-                        angle: {
-                            slider: document.getElementById('surface2Angle'),
-                            value: document.getElementById(
-                                'surface2AngleValue'
                             ),
                         },
                         amplitude: {
@@ -497,10 +509,8 @@
                                 'input',
                                 function () {
                                     let displayValue = this.value;
-                                    if (key === 'angle') {
-                                        displayValue = this.value + '°';
-                                    } else if (
-                                        key === 'roughness' ||
+                                    if (
+                                        key === 'noise' ||
                                         key === 'amplitude'
                                     ) {
                                         displayValue = parseFloat(
@@ -522,10 +532,8 @@
                                 'input',
                                 function () {
                                     let displayValue = this.value;
-                                    if (key === 'angle') {
-                                        displayValue = this.value + '°';
-                                    } else if (
-                                        key === 'roughness' ||
+                                    if (
+                                        key === 'noise' ||
                                         key === 'amplitude'
                                     ) {
                                         displayValue = parseFloat(
@@ -538,6 +546,26 @@
                             );
                         }
                     });
+
+                    // Handle angle select elements separately
+                    const surface1AngleSelect =
+                        document.getElementById('surface1Angle');
+                    const surface2AngleSelect =
+                        document.getElementById('surface2Angle');
+
+                    if (surface1AngleSelect) {
+                        surface1AngleSelect.addEventListener(
+                            'change',
+                            updateSurfaceProperties
+                        );
+                    }
+
+                    if (surface2AngleSelect) {
+                        surface2AngleSelect.addEventListener(
+                            'change',
+                            updateSurfaceProperties
+                        );
+                    }
 
                     // Anisotropic checkboxes
                     const surface1Anisotropic = document.getElementById(
@@ -595,7 +623,7 @@
                             'surface1Anisotropic'
                         ).checked,
                         noise: parseFloat(
-                            document.getElementById('surface1Roughness').value
+                            document.getElementById('surface1noise').value
                         ),
                         wavelength: parseInt(
                             document.getElementById('surface1Wavelength').value
@@ -621,7 +649,7 @@
                             'surface2Anisotropic'
                         ).checked,
                         noise: parseFloat(
-                            document.getElementById('surface2Roughness').value
+                            document.getElementById('surface2noise').value
                         ),
                         wavelength: parseInt(
                             document.getElementById('surface2Wavelength').value
@@ -672,25 +700,25 @@
                     });
                 }
 
-                const sineRoughness = document.getElementById('sineRoughness');
-                const sineRoughnessValue =
-                    document.getElementById('sineRoughnessValue');
-                if (sineRoughness && sineRoughnessValue) {
-                    sineRoughness.addEventListener('input', function () {
-                        sineRoughnessValue.textContent = parseFloat(
+                const sinenoise = document.getElementById('sinenoise');
+                const sinenoiseValue =
+                    document.getElementById('sinenoiseValue');
+                if (sinenoise && sinenoiseValue) {
+                    sinenoise.addEventListener('input', function () {
+                        sinenoiseValue.textContent = parseFloat(
                             this.value
                         ).toFixed(2);
                     });
                 }
 
-                const sineRoughnessScale =
-                    document.getElementById('sineRoughnessScale');
-                const sineRoughnessScaleValue = document.getElementById(
-                    'sineRoughnessScaleValue'
+                const sinenoiseScale =
+                    document.getElementById('sinenoiseScale');
+                const sinenoiseScaleValue = document.getElementById(
+                    'sinenoiseScaleValue'
                 );
-                if (sineRoughnessScale && sineRoughnessScaleValue) {
-                    sineRoughnessScale.addEventListener('input', function () {
-                        sineRoughnessScaleValue.textContent = parseFloat(
+                if (sinenoiseScale && sinenoiseScaleValue) {
+                    sinenoiseScale.addEventListener('input', function () {
+                        sinenoiseScaleValue.textContent = parseFloat(
                             this.value
                         ).toFixed(1);
                     });

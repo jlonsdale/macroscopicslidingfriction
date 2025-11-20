@@ -15,10 +15,10 @@
 
 // Surface properties for individual surfaces
 const Surface1Properties = {
-    amplitude: 5,
+    amplitude: 0.1,
     wavelength: 10,
-    noise: 1,
-    rotation: 2,
+    noise: 0.1,
+    rotation: 0,
     height: 500,
     width: 500,
     bins: 100,
@@ -26,10 +26,10 @@ const Surface1Properties = {
 };
 
 const Surface2Properties = {
-    amplitude: 5,
+    amplitude: 0.1,
     wavelength: 10,
-    noise: 1,
-    rotation: 2,
+    noise: 0.1,
+    rotation: 0,
     height: 500,
     width: 500,
     bins: 100,
@@ -53,13 +53,17 @@ class SceneRenderer {
         this.scene = null;
         this.camera = null;
         this.renderer = null;
+
         this.cube = null;
-        this.cubetex = null;
+        this.cubesize = 4;
+
         this.plane = null;
-        this.planetexangle = 0;
+        this.planeWidth = 50;
+        this.planeHeight = 20;
+        this.startingAngle = 15;
+
         this.cameraControls = null;
         this.rigidBodySim = null;
-        this.startingAngle = 15;
 
         // Physics properties
         this.staticFriction = 0.6;
@@ -159,7 +163,7 @@ class SceneRenderer {
     // ================================================================
 
     addPlane() {
-        const plane = new Plane(this.startingAngle, this.tex2);
+        const plane = new Plane(this.startingAngle, this.tex2, 50, 20);
         this.plane = plane;
         const planeMesh = plane.getMesh();
         this.scene.add(planeMesh);
@@ -243,6 +247,19 @@ class SceneRenderer {
     applySurfaceProperties(surface1Props, surface2Props) {
         // Update properties first
         this.updateSurfaceProperties(surface1Props, surface2Props);
+        if (this.surface1) {
+            this.surface1.updateProperties(surface1Props);
+            console.log('Surface 1 properties applied:', surface1Props);
+            this.tex1 = this.surface1.texture;
+            // Apply updated texture to cube if it exists
+            if (this.cube && this.cube.getMesh()) {
+                const cubeMesh = this.cube.getMesh();
+                if (cubeMesh.material && this.tex1) {
+                    cubeMesh.material.map = this.tex1;
+                    cubeMesh.material.needsUpdate = true;
+                }
+            }
+        }
 
         if (this.surface2) {
             this.surface2.updateProperties(surface2Props);
@@ -258,7 +275,7 @@ class SceneRenderer {
             }
         }
 
-        console.log('Surface properties applied to simulation');
+        this.friction = new Friction(this.surface1, this.surface2);
     }
 
     // ================================================================

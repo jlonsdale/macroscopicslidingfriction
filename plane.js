@@ -1,10 +1,10 @@
 class Plane {
-    constructor(angle, texture) {
+    constructor(angle, texture, width, height) {
         this.mesh = null;
         this.angle = angle; // degrees
         this.texture = texture; // Store the texture parameter
 
-        const geometry = new THREE.PlaneGeometry(50, 20);
+        const geometry = new THREE.PlaneGeometry(width, height);
         const material = new THREE.MeshLambertMaterial({
             map: texture,
             color: 0xffffff, // White to let texture show through

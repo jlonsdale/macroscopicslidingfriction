@@ -368,17 +368,30 @@ class Surface {
     // Method to update surface properties and regenerate the surface
     updateProperties(properties) {
         console.log('Updating surface properties:', properties);
-        //surface variables
-        this.amplitude = properties.amplitude;
-        this.wavelength = properties.wavelength;
-        this.noise = properties.noise;
-        this.rotation = properties.rotation;
-        this.isAnisotropic = properties.anisotropic;
+        console.log('Current noise before update:', this.noise);
+        console.log('New noise value:', properties.noise);
+
+        // Update properties only if they are defined
+        if (properties.amplitude !== undefined) {
+            this.amplitude = properties.amplitude;
+        }
+        if (properties.wavelength !== undefined) {
+            this.wavelength = properties.wavelength;
+        }
+        if (properties.noise !== undefined) {
+            this.noise = properties.noise;
+        }
+        if (properties.rotation !== undefined) {
+            this.rotation = properties.rotation;
+        }
+        if (properties.anisotropic !== undefined) {
+            this.isAnisotropic = properties.anisotropic;
+        }
 
         // Regenerate the surface with new properties
-        this.mesh = this.generateSurface();
         this.texture = this.generateTexture(this.width, this.height);
 
         console.log('Surface updated with properties:', properties);
+        console.log('Final noise value:', this.noise);
     }
 }
