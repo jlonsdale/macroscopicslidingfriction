@@ -1,24 +1,53 @@
 class Plane {
-    constructor(angle, texture, width, height) {
+    constructor(angle, width, height, texture = false) {
+
+        //SETTINGS
+        const ARROWS = true;
+
+
         this.mesh = null;
         this.angle = angle; // degrees
+        this.material = null;
+
         this.texture = texture; // Store the texture parameter
+        this.defaultColor = 0x888888; // Default gray color if no texture
 
         const geometry = new THREE.PlaneGeometry(width, height);
-        const material = new THREE.MeshLambertMaterial({
+        
+        if (!texture) {
+            this.material = new THREE.MeshLambertMaterial({ color: this.defaultColor });
+        }
+        else {
+            this.material = new THREE.MeshLambertMaterial({
             map: texture,
-            color: 0xffffff, // White to let texture show through
+            color: 0x00ff88, // White to let texture show through
         });
+        }
 
-        this.mesh = new THREE.Mesh(geometry, material);
-        // Remove the blue color override that was preventing texture from showing
-        // this.mesh.material.color = new THREE.Color(0x0000ff);
-
-        // Rotate plane to lie flat on XZ plane and then incline by angle
+        this.mesh = new THREE.Mesh(geometry, this.material);
+            
+        // Make a plane to lie flat on XZ plane and then incline by angle
         this.mesh.rotation.x = -Math.PI / 2;
         this.mesh.rotation.y += (angle * Math.PI) / 180;
-
-        this.mesh.position.set(1, 0, 0);
+        this.mesh.position.set(0, 0, 0);
+        if (ARROWS) {
+            // Create arrow helper pointing in positive X direction
+            this.arrowHelper = new THREE.ArrowHelper(
+            new THREE.Vector3(1, 0, 0), // direction (positive X)
+            new THREE.Vector3(0, 0, 0), // origin
+            11, // length
+            0xff0000 // color (red)
+            );
+            this.mesh.add(this.arrowHelper);
+               // Create arrow helper pointing in positive Y direction
+            this.arrowHelper = new THREE.ArrowHelper(
+            new THREE.Vector3(0, 1, 0), // direction (positive Y)
+            new THREE.Vector3(0, 0, 0), // origin
+            11, // length
+            0x0000ff // color (blue)
+            );
+            this.mesh.add(this.arrowHelper);
+        }
 
         // Enable shadows
         this.mesh.receiveShadow = true;

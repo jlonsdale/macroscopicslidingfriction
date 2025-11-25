@@ -6,8 +6,6 @@ const threeCamera = new THREE.PerspectiveCamera(
     1000 // Far clipping plane
 );
 
-// Initialize camera controls (will be referenced in the print function)
-let cameraControls;
 class CameraControls {
     constructor(camera, renderer) {
         this.camera = camera;
@@ -141,22 +139,5 @@ class CameraControls {
         this.yaw = 35.5;
         this.target.set(0, 0, 0);
         this.updateCameraPosition();
-    }
-
-    printCameraDetails() {
-        console.log('Camera Parameters:');
-        console.log(`Distance: ${this.distance}`);
-        console.log(`Pitch: ${this.pitch}°`);
-        console.log(`Yaw: ${this.yaw}°`);
-        console.log(
-            `Target: (${this.target.x}, ${this.target.y}, ${this.target.z})`
-        );
-        console.log(
-            `Position: (${this.camera.position.x.toFixed(
-                2
-            )}, ${this.camera.position.y.toFixed(
-                2
-            )}, ${this.camera.position.z.toFixed(2)})`
-        );
     }
 }

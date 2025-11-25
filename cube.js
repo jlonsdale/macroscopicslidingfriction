@@ -1,48 +1,49 @@
 // Cube class - handles cube creation and properties
 class Cube {
     constructor(
-        position,
+        startingPosition,
+        startingVelocity,
+        startingAngularVelocity,
         size,
-        staticFriction,
-        kineticFriction,
         mass,
-        texture
+        texture = false
     ) {
-        this.velocity = new THREE.Vector3(0, 0, 0); // Initial velocity
-        this.angularVelocity = new THREE.Vector3(0, 0, 0); // Initial angular velocity
+        this.position = startingPosition; // THREE.Vector3
+        this.velocity = startingVelocity; // THREE.Vector3
+        this.angularVelocity = startingAngularVelocity; // THREE.Vector3
+
         this.mass = mass; // Mass of the cube
         this.size = size; // Size of the cube
-        this.texture = texture; // Store the texture parameter
 
         // Calculate inertia tensor for a cube: I = (1/6) * m * a^2 for each axis
         // where m is mass and a is the edge length
         const I = (this.mass * size * size) / 6.0;
         this.inertia = new THREE.Vector3(I, I, I);
 
-        this.staticFriction = staticFriction; // static friction coefficient
+        // Friction coefficients
+        this.staticFriction = null;
+        this.kineticFriction = null;
 
-        this.kineticFriction = kineticFriction; // kinetic friction coefficient
+        this.material = null;
 
-        const geometry = new THREE.BoxGeometry(size, size, size);
+        this.texture = texture; // Store the texture parameter
+        this.defaultColor = 0x0000ff; // Default blue color if no texture
 
-        const material = new THREE.MeshLambertMaterial({
-            map: texture,
-            color: 0x00ff88, // White to let texture show through
-        });
-
-        this.mesh = new THREE.Mesh(geometry, material);
-        // Remove the blue color override that was preventing texture from showing
-        // this.mesh.material.color = new THREE.Color(0x0000ff);
-
-        this.mesh = new THREE.Mesh(geometry, material);
-        this.mesh.position.copy(position);
-        this.mesh.castShadow = true;
-    }
-
-    updatePosition(x, y, z) {
-        if (this.mesh) {
-            this.mesh.position.set(x, y, z);
+        const geometry = new THREE.BoxGeometry(this.size, this.size, this.size);
+        if (!texture) {
+            this.material = new THREE.MeshLambertMaterial({
+                color: this.defaultColor,
+            });
+        } else {
+            this.material = new THREE.MeshLambertMaterial({
+                map: texture,
+                color: 0x0000ff,
+            });
         }
+
+        this.mesh = new THREE.Mesh(geometry, this.material);
+        this.mesh.position.copy(this.position);
+        this.mesh.castShadow = true;
     }
 
     getMesh() {
@@ -50,7 +51,7 @@ class Cube {
     }
 
     getPosition() {
-        return this.mesh ? this.mesh.position.clone() : null;
+        return this.position.clone();
     }
 
     getVelocity() {
@@ -61,26 +62,17 @@ class Cube {
         return this.angularVelocity.clone();
     }
 
-    getMass() {
-        return this.mass;
-    }
-
-    getSize() {
-        return this.size;
-    }
-
     getInertia() {
         return this.inertia.clone();
     }
 
-    setVelocity(velocity) {
-        this.velocity.copy(velocity);
+    setPosition(position) {
+        this.position.copy(position);
+        this.mesh.position.copy(position);
     }
 
-    setPosition(position) {
-        if (this.mesh) {
-            this.mesh.position.copy(position);
-        }
+    setVelocity(velocity) {
+        this.velocity.copy(velocity);
     }
 
     setAngularVelocity(angularVelocity) {
@@ -91,15 +83,18 @@ class Cube {
         this.inertia.copy(inertia);
     }
 
-    setStaticFriction(muS) {
-        this.staticFriction = muS;
+    getMass() {
+        return this.mass;
     }
-    setKineticFriction(muK) {
-        this.kineticFriction = muK;
+
+    getSize() {
+        return this.size;
     }
+
     getStaticFriction() {
         return this.staticFriction;
     }
+
     getKineticFriction() {
         return this.kineticFriction;
     }
