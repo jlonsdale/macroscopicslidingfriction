@@ -110,7 +110,7 @@ class Scene3D {
         console.log('CubeSurface:', CubeSurface);
         console.log('PlaneSurface:', PlaneSurface);
 
-        this.friction = new Friction(CubeSurface, PlaneSurface, 3.0);
+        this.friction = new Friction(CubeSurface, PlaneSurface, 5.0);
 
         // Add a Cube and Plane:
         this.cube = new Cube(
@@ -118,7 +118,7 @@ class Scene3D {
             new THREE.Vector3(0, 0, 0),
             new THREE.Vector3(0, 0, 0),
             5,
-            10,
+            100,
             CubeSurface.texture
         );
         this.plane = new Plane(0, 50, 50, PlaneSurface.texture);
@@ -211,33 +211,71 @@ class Scene3D {
         return this.renderer;
     }
 
-    // Keyboard controls for adding speed in x and z directions
+    // Setup velocity input controls
     setupKeyboardControls() {
+        // Handle arrow key navigation in velocity input fields
         document.addEventListener('keydown', event => {
-            if (event.key.toLowerCase() === 'w') {
-                // Add speed in z direction (forward)
-                const speedBoost = 10.0;
-                this.cube.velocity.z = -speedBoost;
+            const activeElement = document.activeElement;
+            if (activeElement && activeElement.type === 'number') {
+                if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    const currentValue = parseFloat(activeElement.value) || 0;
+                    activeElement.value = (
+                        currentValue + parseFloat(activeElement.step)
+                    ).toFixed(1);
+                }
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    const currentValue = parseFloat(activeElement.value) || 0;
+                    activeElement.value = (
+                        currentValue - parseFloat(activeElement.step)
+                    ).toFixed(1);
+                }
+                if (event.key === 'Enter') {
+                    applyVelocity();
+                }
             }
-            if (event.key.toLowerCase() === 's') {
-                // Add speed in z direction (backward)
-                const speedBoost = 10.0;
-                this.cube.velocity.z = speedBoost;
-            }
-            if (event.key.toLowerCase() === 'd') {
-                // Add speed in x direction (right)
-                const speedBoost = 10.0;
-                this.cube.velocity.x = speedBoost;
-            }
-            if (event.key.toLowerCase() === 'a') {
-                // Add speed in x direction (left)
-                const speedBoost = 10.0;
-                this.cube.velocity.x = -speedBoost;
-            }
+
+            // Camera controls
             if (event.key.toLowerCase() === 'c') {
                 this.cameraControls.printCameraDetails();
             }
         });
+
+        // Add input validation for velocity fields
+        ['velocityX', 'velocityY', 'velocityZ'].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.addEventListener('input', function () {
+                    // Only allow numbers and decimal points
+                    this.value = this.value.replace(/[^-0-9.]/g, '');
+                });
+            }
+        });
+    }
+}
+
+// Global functions for velocity control
+function applyVelocity() {
+    const x = parseFloat(document.getElementById('velocityX').value) || 0;
+    const y = parseFloat(document.getElementById('velocityY').value) || 0;
+    const z = parseFloat(document.getElementById('velocityZ').value) || 0;
+
+    if (window.scene3D && window.scene3D.cube) {
+        window.scene3D.cube.setVelocity(new THREE.Vector3(x, y, z));
+        console.log(`Applied velocity: (${x}, ${y}, ${z})`);
+    }
+}
+
+function resetVelocity() {
+    document.getElementById('velocityX').value = '0';
+    document.getElementById('velocityY').value = '0';
+    document.getElementById('velocityZ').value = '0';
+
+    if (window.scene3D && window.scene3D.cube) {
+        window.scene3D.cube.setVelocity(new THREE.Vector3(0, 0, 0));
+        window.scene3D.cube.setAngularVelocity(new THREE.Vector3(0, 0, 0));
+        console.log('Reset velocity to zero');
     }
 }
 

@@ -15,14 +15,9 @@ class Cube {
         this.mass = mass; // Mass of the cube
         this.size = size; // Size of the cube
 
-        // Calculate inertia tensor for a cube: I = (1/6) * m * a^2 for each axis
-        // where m is mass and a is the edge length
-        const I = (this.mass * size * size) / 6.0;
+        // Moment of inertia for a cube: I = (1/6) * m * a²
+        const I = (1 / 6) * mass * size * size;
         this.inertia = new THREE.Vector3(I, I, I);
-
-        // Friction coefficients
-        this.staticFriction = null;
-        this.kineticFriction = null;
 
         this.material = null;
 

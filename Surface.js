@@ -150,11 +150,48 @@ class Surface {
                 const height = wave + (Math.random() - 0.5) * this.noise;
                 const normalizedHeight = (height / this.amplitude + 1) * 0.5;
 
-                // Color based on height: darker in valleys, lighter on peaks
-                const baseIntensity = Math.floor(normalizedHeight * 180 + 50);
-                const red = Math.min(255, baseIntensity + 30);
-                const green = Math.min(255, baseIntensity + 10);
-                const blue = Math.max(50, baseIntensity - 20);
+                // Calculate hue based on x position (left to right transition)
+                const hue = (x / width) * 360; // 0-360 degrees across width
+                const saturation = 70; // Moderate saturation
+                const lightness = 30 + normalizedHeight * 40; // Base lightness with height variation
+
+                // Convert HSL to RGB
+                const c =
+                    ((1 - Math.abs((2 * lightness) / 100 - 1)) * saturation) /
+                    100;
+                const x_hue = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+                const m = lightness / 100 - c / 2;
+
+                let r, g, b;
+                if (hue >= 0 && hue < 60) {
+                    r = c;
+                    g = x_hue;
+                    b = 0;
+                } else if (hue >= 60 && hue < 120) {
+                    r = x_hue;
+                    g = c;
+                    b = 0;
+                } else if (hue >= 120 && hue < 180) {
+                    r = 0;
+                    g = c;
+                    b = x_hue;
+                } else if (hue >= 180 && hue < 240) {
+                    r = 0;
+                    g = x_hue;
+                    b = c;
+                } else if (hue >= 240 && hue < 300) {
+                    r = x_hue;
+                    g = 0;
+                    b = c;
+                } else {
+                    r = c;
+                    g = 0;
+                    b = x_hue;
+                }
+
+                const red = Math.round((r + m) * 255);
+                const green = Math.round((g + m) * 255);
+                const blue = Math.round((b + m) * 255);
 
                 const index = (y * width + x) * 4;
                 data[index] = red; // Red

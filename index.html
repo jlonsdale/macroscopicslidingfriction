@@ -25,10 +25,171 @@
                 margin: 0;
                 z-index: 100;
             }
+            .velocity-controls {
+                position: absolute;
+                top: 80px;
+                left: 20px;
+                background: rgba(0, 0, 0, 0.8);
+                padding: 15px;
+                border-radius: 8px;
+                font-family: Arial, sans-serif;
+                color: white;
+                z-index: 100;
+            }
+            .velocity-input {
+                display: flex;
+                align-items: center;
+                margin: 5px 0;
+                gap: 10px;
+            }
+            .velocity-input label {
+                min-width: 15px;
+                font-weight: bold;
+            }
+            .velocity-input input {
+                width: 80px;
+                padding: 5px;
+                background: rgba(255, 255, 255, 0.9);
+                border: 1px solid #333;
+                border-radius: 4px;
+                color: #000;
+                font-family: monospace;
+            }
+            .velocity-controls button {
+                background: #4caf50;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                margin: 10px 5px 0 0;
+                border-radius: 4px;
+                cursor: pointer;
+                font-family: Arial, sans-serif;
+            }
+            .velocity-controls button:hover {
+                background: #45a049;
+            }
+            .velocity-controls button.reset {
+                background: #f44336;
+            }
+            .velocity-controls button.reset:hover {
+                background: #da190b;
+            }
         </style>
     </head>
     <body>
         <h1>JEngine MK4 - 3D Physics Engine</h1>
+        <style>
+            .velocity-controls {
+                position: absolute;
+                top: 80px;
+                left: 20px;
+                background: rgba(20, 20, 20, 0.95);
+                padding: 20px;
+                border-radius: 12px;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                color: white;
+                z-index: 100;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            }
+
+            .velocity-controls h3 {
+                margin: 0 0 15px 0;
+                font-size: 14px;
+                font-weight: 500;
+                color: #e0e0e0;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .velocity-input {
+                display: flex;
+                align-items: center;
+                margin: 8px 0;
+                gap: 12px;
+            }
+
+            .velocity-input label {
+                min-width: 12px;
+                font-weight: 400;
+                font-size: 13px;
+                color: #b0b0b0;
+            }
+
+            .velocity-input input {
+                width: 70px;
+                padding: 8px 12px;
+                background: rgba(40, 40, 40, 0.8);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 6px;
+                color: white;
+                font-family: 'Consolas', monospace;
+                font-size: 12px;
+                transition: all 0.2s ease;
+            }
+
+            .velocity-input input:focus {
+                outline: none;
+                border-color: rgba(255, 255, 255, 0.4);
+                background: rgba(50, 50, 50, 0.9);
+            }
+
+            .velocity-controls button {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                padding: 10px 18px;
+                margin: 15px 8px 0 0;
+                border-radius: 6px;
+                cursor: pointer;
+                font-family: inherit;
+                font-size: 12px;
+                font-weight: 500;
+                transition: all 0.2s ease;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .velocity-controls button:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+            }
+
+            .velocity-controls button.reset {
+                background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            }
+
+            .velocity-controls button.reset:hover {
+                box-shadow: 0 4px 16px rgba(255, 107, 107, 0.3);
+            }
+
+            .velocity-controls > div:last-child {
+                margin-top: 15px;
+                font-size: 10px;
+                color: #888;
+                font-style: italic;
+            }
+        </style>
+
+        <div class="velocity-controls">
+            <h3>Instantaneous Velocity</h3>
+            <div class="velocity-input">
+                <label>X:</label>
+                <input type="number" id="velocityX" value="0" step="1" />
+            </div>
+            <div class="velocity-input">
+                <label>Y:</label>
+                <input type="number" id="velocityY" value="0" step="1" />
+            </div>
+            <div class="velocity-input">
+                <label>Z:</label>
+                <input type="number" id="velocityZ" value="0" step="1" />
+            </div>
+            <button onclick="applyVelocity()">Apply</button>
+            <button class="reset" onclick="resetVelocity()">Reset</button>
+        </div>
+
         <div id="canvas-container"></div>
 
         <!-- Three.js -->
