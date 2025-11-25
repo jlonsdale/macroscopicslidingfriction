@@ -58,7 +58,7 @@ class Scene3D {
             0.1,
             1000
         );
-        this.camera.position.set(0.01, 39.99, -0.7);
+        this.camera.position.set(5.0, 5.0, 5.0);
         this.camera.lookAt(0, 0, 0);
 
         // Create renderer
@@ -85,8 +85,8 @@ class Scene3D {
         if (BIRDSEYE) {
             // Set camera parameters to match specification
             this.cameraControls.distance = 40;
-            this.cameraControls.pitch = 89;
-            this.cameraControls.yaw = 270.5;
+            this.cameraControls.pitch = 90;
+            this.cameraControls.yaw = 450;
             this.cameraControls.target.set(0, 0, 0);
             this.cameraControls.updateCameraPosition();
         }
@@ -117,7 +117,7 @@ class Scene3D {
             new THREE.Vector3(0, 0, 0),
             new THREE.Vector3(0, 0, 0),
             new THREE.Vector3(0, 0, 0),
-            2,
+            5,
             10,
             CubeSurface.texture
         );
@@ -133,179 +133,14 @@ class Scene3D {
         );
 
         // Create a small graph in the corner for directional profile
-        this.createDirectionalProfileGraph();
+        createDirectionalProfileGraph();
+        updateDirectionalProfileGraph(this.friction.directionalProfile());
 
         // Setup keyboard controls
         this.setupKeyboardControls();
 
         // Start render loop
         this.animate();
-    }
-
-    createDirectionalProfileGraph() {
-        // Create graph container
-        const graphContainer = document.createElement('div');
-        graphContainer.id = 'directional-profile-graph';
-        graphContainer.style.cssText = `
-            position: absolute;
-            top: 80px;
-            right: 20px;
-            width: 320px;
-            height: 340px;
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid #444;
-            border-radius: 8px;
-            padding: 10px;
-            z-index: 200;
-            font-family: Arial, sans-serif;
-            color: white;
-        `;
-
-        // Add title
-        const title = document.createElement('h3');
-        title.textContent = 'Directional Friction Profile (Polar)';
-        title.style.cssText = `
-            margin: 0 0 10px 0;
-            font-size: 14px;
-            text-align: center;
-            color: #fff;
-        `;
-        graphContainer.appendChild(title);
-
-        // Create canvas for the graph
-        const canvas = document.createElement('canvas');
-        canvas.width = 300;
-        canvas.height = 300;
-        canvas.style.cssText = `
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-        `;
-        graphContainer.appendChild(canvas);
-
-        // Add to document body
-        document.body.appendChild(graphContainer);
-
-        // Store references for updating
-        this.graphContainer = graphContainer;
-        this.graphCanvas = canvas;
-        this.graphContext = canvas.getContext('2d');
-
-        // Initial render
-        this.updateDirectionalProfileGraph();
-    }
-
-    updateDirectionalProfileGraph() {
-        if (!this.graphContext || !this.friction) return;
-
-        const ctx = this.graphContext;
-        const canvas = this.graphCanvas;
-        const width = canvas.width;
-        const height = canvas.height;
-        const centerX = width / 2;
-        const centerY = height / 2;
-        const maxRadius = Math.min(width, height) / 2 - 30;
-
-        // Clear canvas
-        ctx.clearRect(0, 0, width, height);
-
-        // Get directional profile data
-        const profile = this.friction.directionalProfile();
-        if (!profile || !profile.angles || !profile.mus) return;
-
-        const angles = profile.angles;
-        const mus = profile.mus;
-
-        // Find min/max for scaling
-        const minMu = Math.min(...mus);
-        const maxMu = Math.max(...mus);
-        const muRange = maxMu - minMu || 1; // Avoid division by zero
-
-        // Draw circular grid
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.lineWidth = 1;
-
-        // Draw concentric circles
-        for (let i = 1; i <= 4; i++) {
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, (i / 4) * maxRadius, 0, 2 * Math.PI);
-            ctx.stroke();
-        }
-
-        // Draw radial lines (every 30 degrees)
-        for (let i = 0; i < 12; i++) {
-            const angle = (i * 30 * Math.PI) / 180;
-            ctx.beginPath();
-            ctx.moveTo(centerX, centerY);
-            ctx.lineTo(
-                centerX + Math.cos(angle - Math.PI / 2) * maxRadius,
-                centerY + Math.sin(angle - Math.PI / 2) * maxRadius
-            );
-            ctx.stroke();
-        }
-
-        // Draw the friction profile as polar plot
-        ctx.strokeStyle = '#00ff88';
-        ctx.fillStyle = 'rgba(0, 255, 136, 0.2)';
-        ctx.lineWidth = 3;
-
-        // Fill area
-        ctx.beginPath();
-        for (let i = 0; i < angles.length; i++) {
-            const normalizedMu = (mus[i] - minMu) / muRange;
-            const radius = (normalizedMu * 0.8 + 0.2) * maxRadius; // 20-100% of max radius
-            const x = centerX + Math.cos(angles[i] - Math.PI / 2) * radius;
-            const y = centerY + Math.sin(angles[i] - Math.PI / 2) * radius;
-
-            if (i === 0) {
-                ctx.moveTo(x, y);
-            } else {
-                ctx.lineTo(x, y);
-            }
-        }
-        ctx.closePath();
-        ctx.fill();
-
-        // Draw outline
-        ctx.beginPath();
-        for (let i = 0; i < angles.length; i++) {
-            const normalizedMu = (mus[i] - minMu) / muRange;
-            const radius = (normalizedMu * 0.8 + 0.2) * maxRadius;
-            const x = centerX + Math.cos(angles[i] - Math.PI / 2) * radius;
-            const y = centerY + Math.sin(angles[i] - Math.PI / 2) * radius;
-
-            if (i === 0) {
-                ctx.moveTo(x, y);
-            } else {
-                ctx.lineTo(x, y);
-            }
-        }
-        ctx.closePath();
-        ctx.stroke();
-
-        // Draw angle labels
-        ctx.fillStyle = '#fff';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-
-        const labelRadius = maxRadius + 15;
-        for (let i = 0; i < 8; i++) {
-            const angle = (i * 45 * Math.PI) / 180;
-            const x = centerX + Math.cos(angle - Math.PI / 2) * labelRadius;
-            const y = centerY + Math.sin(angle - Math.PI / 2) * labelRadius;
-            ctx.fillText(`${i * 45}°`, x, y + 4);
-        }
-
-        // Draw value labels
-        ctx.font = '10px Arial';
-        ctx.textAlign = 'left';
-        ctx.fillText(`Min: ${minMu.toFixed(3)}`, 5, height - 15);
-        ctx.fillText(`Max: ${maxMu.toFixed(3)}`, 5, height - 5);
-
-        // Draw center dot
-        ctx.fillStyle = '#ff0040';
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, 3, 0, 2 * Math.PI);
-        ctx.fill();
     }
 
     setupLighting() {
@@ -348,7 +183,6 @@ class Scene3D {
     animate() {
         requestAnimationFrame(() => this.animate());
         this.rigidBodySim.step();
-        this.updateDirectionalProfileGraph();
         this.renderer.render(this.scene, this.camera);
     }
 
@@ -380,15 +214,25 @@ class Scene3D {
     // Keyboard controls for adding speed in x and z directions
     setupKeyboardControls() {
         document.addEventListener('keydown', event => {
-            if (event.key.toLowerCase() === 'x') {
-                // Add speed in x direction to the cube
+            if (event.key.toLowerCase() === 'w') {
+                // Add speed in z direction (forward)
+                const speedBoost = 10.0;
+                this.cube.velocity.z = -speedBoost;
+            }
+            if (event.key.toLowerCase() === 's') {
+                // Add speed in z direction (backward)
+                const speedBoost = 10.0;
+                this.cube.velocity.z = speedBoost;
+            }
+            if (event.key.toLowerCase() === 'd') {
+                // Add speed in x direction (right)
                 const speedBoost = 10.0;
                 this.cube.velocity.x = speedBoost;
             }
-            if (event.key.toLowerCase() === 'z') {
-                // Add speed in z direction to the cube
+            if (event.key.toLowerCase() === 'a') {
+                // Add speed in x direction (left)
                 const speedBoost = 10.0;
-                this.cube.velocity.z = -speedBoost;
+                this.cube.velocity.x = -speedBoost;
             }
             if (event.key.toLowerCase() === 'c') {
                 this.cameraControls.printCameraDetails();

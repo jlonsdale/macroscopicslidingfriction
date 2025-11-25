@@ -24,7 +24,7 @@ class GSRigidBodySim {
 
         // Damping
         this.linearDamping = 0.01;
-        this.angularDamping = 0.05;
+        this.angularDamping = 0.01;
 
         // Solver tuning
         this.gsIterations = 12; // 8–20 typical
@@ -392,6 +392,8 @@ class GSRigidBodySim {
         // 1) Collect all contacts at/below plane
         const contacts = this._collectContacts();
         this.inContact = contacts.length > 0;
+
+        console.log(contacts.length);
 
         // 2) Small positional pre-correction to avoid large overlaps (cap number)
         // Distribute correction across contacts to avoid excessive push.
