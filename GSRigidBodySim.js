@@ -151,23 +151,29 @@ class GSRigidBodySim {
             const worldPt = com.clone().add(r); // point in world
             const phi = n.dot(new THREE.Vector3().subVectors(worldPt, p0));
             if (phi <= 0) {
-                contacts.push({
-                    n: n.clone(),
-                    r,
-                    point: worldPt,
-                    depth: -phi,
-                    // Will be set in precompute:
-                    t1: null,
-                    t2: null,
-                    K_n: 0,
-                    K_t1: 0,
-                    K_t2: 0,
-                    bias: 0,
-                    // Accumulated impulses (warm starting):
-                    lambda_n: 0,
-                    lambda_t1: 0,
-                    lambda_t2: 0,
-                });
+                // Project the penetrating corner onto the plane surface
+                const projectedPt = worldPt.clone().addScaledVector(n, -phi);
+
+                // Check if the projected point is actually on the finite plane geometry
+                if (this.plane.isOnPlane(projectedPt)) {
+                    contacts.push({
+                        n: n.clone(),
+                        r,
+                        point: projectedPt, // Use projected point instead of corner
+                        depth: -phi,
+                        // Will be set in precompute:
+                        t1: null,
+                        t2: null,
+                        K_n: 0,
+                        K_t1: 0,
+                        K_t2: 0,
+                        bias: 0,
+                        // Accumulated impulses (warm starting):
+                        lambda_n: 0,
+                        lambda_t1: 0,
+                        lambda_t2: 0,
+                    });
+                }
             }
         }
         return contacts;
@@ -285,22 +291,19 @@ class GSRigidBodySim {
 
         for (let it = 0; it < this.gsIterations; ++it) {
             for (const c of contacts) {
+                // All contacts are already validated to be on the plane during detection
                 // --- normal ---
                 let v = cube.getVelocity();
-
                 let w = cube.getAngularVelocity();
                 let vRel = v
                     .clone()
                     .add(new THREE.Vector3().copy(w).cross(c.r));
                 const vn = c.n.dot(vRel);
 
-                // Restitution is typically omitted in GS loops for resting contacts.
-                // If you want bounce on clear impacts, add it only when vn is sufficiently negative
-                // AND on the first iteration, otherwise set to 0.
-                const restitutionTerm = 0; // or: (it === 0 && vn < -0.2 ? this.restitution * Math.min(vn, 0) : 0);
+                const restitutionTerm = 0;
 
                 let dLambda_n = -(vn + c.bias + restitutionTerm) / c.K_n;
-                const lambda_n_new = Math.max(c.lambda_n + dLambda_n, 0); // nonnegative
+                const lambda_n_new = Math.max(c.lambda_n + dLambda_n, 0);
                 dLambda_n = lambda_n_new - c.lambda_n;
                 c.lambda_n = lambda_n_new;
                 if (dLambda_n !== 0) {
@@ -323,7 +326,6 @@ class GSRigidBodySim {
                 if (vSliding.lengthSq() > 0.1) {
                     // Project sliding velocity to XZ plane and get angle
                     slidingAngle = Math.atan2(vSliding.z, vSliding.x);
-                    console.log((slidingAngle * 180) / Math.PI);
                 }
 
                 // Get anisotropic friction coefficients (in radians)
@@ -392,8 +394,6 @@ class GSRigidBodySim {
         // 1) Collect all contacts at/below plane
         const contacts = this._collectContacts();
         this.inContact = contacts.length > 0;
-
-        console.log(contacts.length);
 
         // 2) Small positional pre-correction to avoid large overlaps (cap number)
         // Distribute correction across contacts to avoid excessive push.
