@@ -29,6 +29,7 @@ class Scene3D {
             rotation: deg2rad(90),
             bins: 100,
         };
+        this.cubeSurface = null;
 
         this.PlaneSurfaceParams = {
             amplitude: 0.5,
@@ -37,6 +38,9 @@ class Scene3D {
             rotation: deg2rad(90),
             bins: 100,
         };
+        this.planeSurface = null;
+
+        this.friction = null;
 
         this.rigidBodySim = null;
 
@@ -91,7 +95,7 @@ class Scene3D {
             this.cameraControls.updateCameraPosition();
         }
 
-        let CubeSurface = new Surface(
+        this.cubeSurface = new Surface(
             this.CubeSurfaceParams.amplitude,
             this.CubeSurfaceParams.wavelength,
             this.CubeSurfaceParams.noise,
@@ -99,7 +103,7 @@ class Scene3D {
             this.CubeSurfaceParams.bins
         );
 
-        let PlaneSurface = new Surface(
+        this.planeSurface = new Surface(
             this.PlaneSurfaceParams.amplitude,
             this.PlaneSurfaceParams.wavelength,
             this.PlaneSurfaceParams.noise,
@@ -107,10 +111,7 @@ class Scene3D {
             this.PlaneSurfaceParams.bins
         );
 
-        console.log('CubeSurface:', CubeSurface);
-        console.log('PlaneSurface:', PlaneSurface);
-
-        this.friction = new Friction(CubeSurface, PlaneSurface, 5.0);
+        this.friction = new Friction(this.cubeSurface, this.planeSurface, 5.0);
 
         // Add a Cube and Plane:
         this.cube = new Cube(
@@ -119,9 +120,9 @@ class Scene3D {
             new THREE.Vector3(0, 0, 0),
             5,
             100,
-            CubeSurface.texture
+            this.cubeSurface.texture
         );
-        this.plane = new Plane(0, 50, 50, PlaneSurface.texture);
+        this.plane = new Plane(0, 50, 50, this.planeSurface.texture);
 
         this.addObject(this.plane.getMesh());
         this.addObject(this.cube.getMesh());
@@ -257,14 +258,32 @@ class Scene3D {
 
 // Global functions for velocity control
 function applyVelocity() {
+    let cube = window?.scene3D?.cube;
+
     const x = parseFloat(document.getElementById('velocityX').value) || 0;
     const y = parseFloat(document.getElementById('velocityY').value) || 0;
     const z = parseFloat(document.getElementById('velocityZ').value) || 0;
 
-    if (window.scene3D && window.scene3D.cube) {
+    if (cube) {
         window.scene3D.cube.setVelocity(new THREE.Vector3(x, y, z));
-        console.log(`Applied velocity: (${x}, ${y}, ${z})`);
     }
+
+    // Get cube's current local X direction and use it to update surface rotation
+    const localXDirection = cube.getLocalXDirection();
+    const rotationAngle = Math.atan2(localXDirection.z, localXDirection.x);
+
+    // Update cube surface rotation
+    window.scene3D.cubeSurface.rotateSurface(rotationAngle);
+
+    // Recreate friction object with updated surface to ensure directional profile updates
+    window.scene3D.friction = new Friction(
+        window.scene3D.cubeSurface,
+        window.scene3D.planeSurface,
+        5.0
+    );
+
+    // Update directional profile graph
+    updateDirectionalProfileGraph(window.scene3D.friction.directionalProfile());
 }
 
 function resetVelocity() {
@@ -275,7 +294,6 @@ function resetVelocity() {
     if (window.scene3D && window.scene3D.cube) {
         window.scene3D.cube.setVelocity(new THREE.Vector3(0, 0, 0));
         window.scene3D.cube.setAngularVelocity(new THREE.Vector3(0, 0, 0));
-        console.log('Reset velocity to zero');
     }
 }
 

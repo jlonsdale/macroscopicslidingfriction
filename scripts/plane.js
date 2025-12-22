@@ -84,6 +84,9 @@ class Plane {
         // A point on the plane (we use the mesh position)
         return this.mesh.position.clone();
     }
+    getArrowHelper() {
+        return this.arrowHelper;
+    }
 
     isOnPlane(point, tolerance = 0.001) {
         // Check if point is within distance tolerance of the mathematical plane

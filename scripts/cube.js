@@ -41,6 +41,30 @@ class Cube {
         this.mesh.castShadow = true;
     }
 
+    getLocalXDirection() {
+        const localX = new THREE.Vector3(1, 0, 0);
+        localX.applyQuaternion(this.mesh.quaternion);
+        localX.normalize();
+
+        // Calculate angle difference from world space X axis
+        const worldX = new THREE.Vector3(1, 0, 0);
+        const angle = localX.angleTo(worldX);
+
+        // Determine if rotation is clockwise or counter-clockwise
+        const cross = new THREE.Vector3().crossVectors(worldX, localX);
+        const isClockwise = cross.z < 0;
+        const signedAngle = isClockwise ? -angle : angle;
+        const degrees = THREE.MathUtils.radToDeg(signedAngle);
+
+        console.log(
+            `Local X differs from world X by ${degrees.toFixed(2)} degrees ${
+                isClockwise ? '(clockwise)' : '(counter-clockwise)'
+            }`
+        );
+
+        return localX;
+    }
+
     getMesh() {
         return this.mesh;
     }

@@ -120,6 +120,17 @@ class Surface {
         return mesh;
     }
 
+    rotateSurface(angle) {
+        this.rotation = angle;
+        this.mesh = this.generateSurface();
+        this.texture = this.generateTexture(this.width, this.height);
+        // Recompute NDF after rotation change
+        this.NDF = this.areaWeightedNDF();
+        this.areaWeights = this.NDF.areaWeights;
+        this.ndfSamples = this.NDF.ndfSamples;
+        this.normals = this.NDF.normals;
+    }
+
     generateTexture(width, height) {
         width = 200;
         height = 200;
