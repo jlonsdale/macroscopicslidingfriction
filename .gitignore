@@ -104,3 +104,9 @@ temp/
 
 # Local development
 local/
+
+./surface_data
+*.obj
+*.png
+*.jpg
+*.jpeg

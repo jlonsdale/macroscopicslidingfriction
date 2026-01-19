@@ -8,6 +8,7 @@ function rad2deg(radians) {
 }
 
 const BIRDSEYE = true;
+const ANGLE_THRESHOLD = 1.0; // degrees
 
 class Scene3D {
     constructor() {
@@ -269,21 +270,25 @@ function applyVelocity() {
     }
 
     // Get cube's current local X direction and use it to update surface rotation
-    const localXDirection = cube.getLocalXDirection();
-    const rotationAngle = Math.atan2(localXDirection.z, localXDirection.x);
+    const { degrees, localX } = cube.getLocalXDirection();
+    const rotationAngle = Math.atan2(localX.z, localX.x);
+    if (Math.abs(degrees) > ANGLE_THRESHOLD) {
+        console.log('Rerendering Friction Cone');
+        // Update cube surface rotation
+        window.scene3D.cubeSurface.rotateSurface(rotationAngle);
 
-    // Update cube surface rotation
-    window.scene3D.cubeSurface.rotateSurface(rotationAngle);
+        // Recreate friction object with updated surface to ensure directional profile updates
+        window.scene3D.friction = new Friction(
+            window.scene3D.cubeSurface,
+            window.scene3D.planeSurface,
+            5.0
+        );
 
-    // Recreate friction object with updated surface to ensure directional profile updates
-    window.scene3D.friction = new Friction(
-        window.scene3D.cubeSurface,
-        window.scene3D.planeSurface,
-        5.0
-    );
-
-    // Update directional profile graph
-    updateDirectionalProfileGraph(window.scene3D.friction.directionalProfile());
+        // Update directional profile graph
+        updateDirectionalProfileGraph(
+            window.scene3D.friction.directionalProfile()
+        );
+    }
 }
 
 function resetVelocity() {

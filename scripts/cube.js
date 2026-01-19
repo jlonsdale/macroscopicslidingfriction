@@ -62,7 +62,7 @@ class Cube {
             }`
         );
 
-        return localX;
+        return { degrees, localX };
     }
 
     getMesh() {

@@ -15,8 +15,6 @@ class GSRigidBodySim {
 
         // Material params
         this.restitution = 0.05; // 0 = inelastic, 1 = perfectly elastic
-        this.muS = 0.5;
-        this.muK = 0.5;
 
         // Stabilization (Baumgarte) and slop
         this.beta = 0.2; // error reduction parameter [0..1]
@@ -231,17 +229,17 @@ class GSRigidBodySim {
             c.t2 = t2;
 
             // Effective mass along a direction dir: K = 1/m + dir · [ (I^{-1}(r×dir)) × r ]
-            const Kdir = dir => {
-                const rxd = new THREE.Vector3().copy(c.r).cross(dir);
+            const effectiveMass = direction => {
+                const rxd = new THREE.Vector3().copy(c.r).cross(direction);
                 const Iinv_rxd = this._mat3MulVec3(Iinv, rxd);
                 return (
                     invMass +
-                    dir.dot(new THREE.Vector3().copy(Iinv_rxd).cross(c.r))
+                    direction.dot(new THREE.Vector3().copy(Iinv_rxd).cross(c.r))
                 );
             };
-            c.K_n = Kdir(n);
-            c.K_t1 = Kdir(t1);
-            c.K_t2 = Kdir(t2);
+            c.K_n = effectiveMass(n);
+            c.K_t1 = effectiveMass(t1);
+            c.K_t2 = effectiveMass(t2);
 
             // Baumgarte bias (velocity units)
             c.bias =
@@ -300,9 +298,7 @@ class GSRigidBodySim {
                     .add(new THREE.Vector3().copy(w).cross(c.r));
                 const vn = c.n.dot(vRel);
 
-                const restitutionTerm = 0;
-
-                let dLambda_n = -(vn + c.bias + restitutionTerm) / c.K_n;
+                let dLambda_n = -(vn + c.bias) / c.K_n;
                 const lambda_n_new = Math.max(c.lambda_n + dLambda_n, 0);
                 dLambda_n = lambda_n_new - c.lambda_n;
                 c.lambda_n = lambda_n_new;

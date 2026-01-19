@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Surface Renderer</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+                background-color: #000;
+            }
+            #canvas-container {
+                width: 100%;
+                height: 100%;
+            }
+            #ndf-plot {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+
+                padding: 10px;
+                z-index: 1000;
+            }
+            #ndf-plot h3 {
+                color: white;
+                margin: 0 0 10px 0;
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+            }
+            #controls {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background-color: rgba(0, 0, 0, 0.8);
+                border: 2px solid #555;
+                border-radius: 5px;
+                padding: 10px;
+                z-index: 1000;
+            }
+            #controls label {
+                color: white;
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+                display: block;
+                margin-bottom: 5px;
+            }
+            #wave-type-select {
+                padding: 5px;
+                border-radius: 3px;
+                border: 1px solid #666;
+                background-color: #333;
+                color: white;
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="canvas-container"></div>
+        <div id="ndf-plot"></div>
+        <div id="controls">
+            <label for="wave-type-select">Wave Type:</label>
+            <select id="wave-type-select">
+                <option value="7">Simple wave</option>
+                <option value="8">
+                    Ultra High Noise Isotropic (6 directions)
+                </option>
+                <option value="9">
+                    Isotropic Medium Roughness (6 directions)
+                </option>
+                <option value="10">
+                    Isotropic Ultra Smooth Low Noise (6 directions)
+                </option>
+                <option value="11">Flat Surface</option>
+                <option value="12">Simple Isotropic (3 directions)</option>
+                <option value="13">Basic Isotropic (4 directions)</option>
+                <option value="14">Gentle Isotropic (8 directions)</option>
+            </select>
+        </div>
+
+        <button
+            id="download-obj"
+            style="
+                position: absolute;
+                bottom: 10px;
+                right: 10px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                padding: 10px 15px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+                z-index: 1000;
+            "
+        >
+            Download OBJ
+        </button>
+
+        <button
+            id="download-image"
+            style="
+                position: absolute;
+                bottom: 50px;
+                right: 10px;
+                background-color: #28a745;
+                color: white;
+                border: none;
+                padding: 10px 15px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+                z-index: 1000;
+            "
+        >
+            Download Image
+        </button>
+
+        <script>
+            // Add download image functionality
+            document
+                .getElementById('download-image')
+                .addEventListener('click', function () {
+                    const waveTypeSelect =
+                        document.getElementById('wave-type-select');
+                    const selectedWaveType = waveTypeSelect.value;
+                    const waveTypeName = waveTypeSelect.options[
+                        waveTypeSelect.selectedIndex
+                    ].text
+                        .replace(/[^a-zA-Z0-9]/g, '_')
+                        .toLowerCase();
+
+                    // Render the current scene to get the latest image
+                    renderer.render(scene, camera);
+
+                    // Get the canvas image data
+                    const canvas = renderer.domElement;
+                    const dataURL = canvas.toDataURL('image/png');
+
+                    // Create and download the image
+                    const a = document.createElement('a');
+                    a.href = dataURL;
+                    a.download = `wavetype_${selectedWaveType}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                });
+        </script>
+
+        <script>
+            // Add download OBJ functionality
+            document
+                .getElementById('download-obj')
+                .addEventListener('click', function () {
+                    if (!surface) {
+                        alert('No surface to download');
+                        return;
+                    }
+
+                    const geometry = surface.mesh.geometry;
+                    const vertices = geometry.attributes.position.array;
+                    const indices = geometry.index
+                        ? geometry.index.array
+                        : null;
+
+                    let objContent =
+                        '# OBJ file generated from Surface Renderer\n';
+
+                    // Add vertices
+                    for (let i = 0; i < vertices.length; i += 3) {
+                        objContent += `v ${vertices[i]} ${vertices[i + 1]} ${
+                            vertices[i + 2]
+                        }\n`;
+                    }
+
+                    // Add faces
+                    if (indices) {
+                        for (let i = 0; i < indices.length; i += 3) {
+                            objContent += `f ${indices[i] + 1} ${
+                                indices[i + 1] + 1
+                            } ${indices[i + 2] + 1}\n`;
+                        }
+                    } else {
+                        // Non-indexed geometry
+                        for (let i = 0; i < vertices.length / 3; i += 3) {
+                            objContent += `f ${i + 1} ${i + 2} ${i + 3}\n`;
+                        }
+                    }
+
+                    // Create and download file
+                    const blob = new Blob([objContent], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const waveTypeSelect =
+                        document.getElementById('wave-type-select');
+                    const selectedWaveType = waveTypeSelect.value;
+                    const waveTypeName = waveTypeSelect.options[
+                        waveTypeSelect.selectedIndex
+                    ].text
+                        .replace(/[^a-zA-Z0-9]/g, '_')
+                        .toLowerCase();
+
+                    a.download = `surface_${selectedWaveType}.obj`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
+        </script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+        <script src="../scripts/camera-controls.js"></script>
+        <script src="surface_types.js"></script>
+
+        <script>
+            // 1 well defined wave
+            const waveType7 = {
+                numberOfWaves: 1,
+                amplitudes: [2.0],
+                wavelengths: [2.0],
+                noiseLevels: [0.1],
+                orientations: [0],
+            };
+
+            // Wave type 8 - High Noise Isotropic (6 directions)
+            const waveType8 = {
+                numberOfWaves: 12,
+
+                // descending amplitudes so no single wave dominates
+                amplitudes: [
+                    3.5, 3.0, 2.8, 2.5, 2.2, 2.0, 1.8, 1.6, 1.4, 1.2, 1.0, 0.8,
+                ],
+
+                // short wavelengths = high spatial frequency
+                wavelengths: [45, 42, 38, 35, 32, 30, 28, 26, 24, 22, 20, 18],
+
+                // aggressive noise — this is what makes it *very* noisy
+                noiseLevels: [
+                    1.2, 1.1, 1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6,
+                    0.55,
+                ],
+
+                // isotropic: evenly spaced angles over [0, 2π)
+                orientations: [
+                    0,
+                    Math.PI / 6,
+                    Math.PI / 3,
+                    Math.PI / 2,
+                    (2 * Math.PI) / 3,
+                    (5 * Math.PI) / 6,
+                    Math.PI,
+                    (7 * Math.PI) / 6,
+                    (4 * Math.PI) / 3,
+                    (3 * Math.PI) / 2,
+                    (5 * Math.PI) / 3,
+                    (11 * Math.PI) / 6,
+                ],
+            };
+
+            // Wave type 9 - Isotropic Medium Roughness (6 evenly distributed directions)
+            const waveType9 = {
+                numberOfWaves: 5,
+                amplitudes: [3.0, 1.2, 1.0, 0.8, 0.6],
+                wavelengths: [220, 45, 35, 28, 22],
+                noiseLevels: [0.05, 0.1, 0.1, 0.12, 0.12],
+                orientations: [
+                    Math.PI / 8,
+                    0,
+                    Math.PI / 3,
+                    -Math.PI / 4,
+                    Math.PI / 2,
+                ],
+            };
+
+            // Wave type 10 - Isotropic Ultra Smooth Low Noise (6 evenly distributed directions)
+            const waveType10 = {
+                numberOfWaves: 6,
+                amplitudes: [2.0, 1.8, 1.6, 1.4, 1.2, 1.0],
+                wavelengths: [920.5, 400.0, 900.5, 300.0, 200.5, 1000.0],
+                noiseLevels: [0.3, 0.32, 0.35, 0.38, 0.4, 0.42],
+                orientations: [
+                    0, // 0°
+                    Math.PI / 3, // 60°
+                    (2 * Math.PI) / 3, // 120°
+                    Math.PI, // 180°
+                    (4 * Math.PI) / 3, // 240°
+                    (5 * Math.PI) / 3, // 300°
+                ],
+            };
+
+            // Wave type 11 - Flat Surface
+            const waveType11 = {
+                numberOfWaves: 6,
+
+                // extremely low amplitude
+                amplitudes: [0.35, 0.3, 0.25, 0.2, 0.15, 0.1],
+
+                // very long wavelengths = smooth curvature
+                wavelengths: [320, 280, 240, 200, 180, 160],
+
+                // almost no noise
+                noiseLevels: [0.09, 0.01, 0.01, 0.01, 0.01, 0.01],
+
+                // evenly distributed directions (isotropic)
+                orientations: [
+                    0,
+                    Math.PI / 3,
+                    (2 * Math.PI) / 3,
+                    Math.PI,
+                    (4 * Math.PI) / 3,
+                    (5 * Math.PI) / 3,
+                ],
+            };
+
+            // Wave type 12 - Simple Isotropic (3 directions, evenly spaced)
+            const waveType12 = {
+                numberOfWaves: 3,
+                amplitudes: [1.5, 1.5, 1.5],
+                wavelengths: [80, 80, 80],
+                noiseLevels: [0.2, 0.2, 0.2],
+                orientations: [
+                    0, // 0°
+                    (2 * Math.PI) / 3, // 120°
+                    (4 * Math.PI) / 3, // 240°
+                ],
+            };
+
+            // Wave type 13 - Basic Isotropic (4 directions, cardinal + diagonal)
+            const waveType13 = {
+                numberOfWaves: 4,
+                amplitudes: [1.2, 1.2, 1.2, 1.2],
+                wavelengths: [60, 60, 60, 60],
+                noiseLevels: [0.3, 0.3, 0.3, 0.3],
+                orientations: [
+                    0, // 0°
+                    Math.PI / 2, // 90°
+                    Math.PI, // 180°
+                    (3 * Math.PI) / 2, // 270°
+                ],
+            };
+
+            // Wave type 14 - Gentle Isotropic (8 directions, very even distribution)
+            const waveType14 = {
+                numberOfWaves: 8,
+                amplitudes: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
+                wavelengths: [120, 120, 120, 120, 120, 120, 120, 120],
+                noiseLevels: [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15],
+                orientations: [
+                    0, // 0°
+                    Math.PI / 4, // 45°
+                    Math.PI / 2, // 90°
+                    (3 * Math.PI) / 4, // 135°
+                    Math.PI, // 180°
+                    (5 * Math.PI) / 4, // 225°
+                    (3 * Math.PI) / 2, // 270°
+                    (7 * Math.PI) / 4, // 315°
+                ],
+            };
+
+            // Scene setup
+            let scene, camera, renderer;
+
+            // Initialize
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document
+                .getElementById('canvas-container')
+                .appendChild(renderer.domElement);
+
+            // Initialize camera controls
+            let camera_controls = new CameraControls(camera, renderer);
+
+            // Lock camera at specified position and disable controls
+            camera_controls.distance = 860;
+            camera_controls.pitch = 0;
+            camera_controls.yaw = 90;
+            camera_controls.target.set(0, 0, 0);
+            camera_controls.updateCameraPosition();
+
+            // Set exact camera position and rotation
+            camera.position.set(
+                5.24173770331938e-14,
+                82.42734716739263,
+                856.0407305957738
+            );
+            camera.rotation.set(
+                -0.0959931088596881,
+                6.095043841069048e-17,
+                5.868859701788084e-18
+            );
+
+            // Disable camera controls to lock position
+            camera_controls.lockCamera();
+
+            // Add keyboard event listener for camera settings
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'c' || event.key === 'C') {
+                    console.log('Current Camera Settings:');
+                    console.log('Position:', camera.position);
+                    console.log('Rotation:', camera.rotation);
+                    console.log('Distance:', camera_controls.distance);
+                    console.log('Pitch:', camera_controls.pitch);
+                    console.log('Yaw:', camera_controls.yaw);
+                    console.log('Target:', camera_controls.target);
+                }
+            });
+
+            // Add lighting setup
+            // Ambient light for overall illumination
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+            scene.add(ambientLight);
+
+            // Main directional light (sun-like)
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(100, 200, 100);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+
+            // Fill light from the opposite direction
+            const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+            fillLight.position.set(-50, 50, -50);
+            scene.add(fillLight);
+
+            // Point light for additional highlights
+            const pointLight = new THREE.PointLight(0xffffff, 0.5, 500);
+            pointLight.position.set(50, 100, 50);
+            scene.add(pointLight);
+
+            // Function to create surface with given wave type
+            function createSurface(waveTypeNumber) {
+                // Get the wave type configuration
+                const waveTypes = {
+                    7: waveType7,
+                    8: waveType8,
+                    9: waveType9,
+                    10: waveType10,
+                    11: waveType11,
+                    12: waveType12,
+                    13: waveType13,
+                    14: waveType14,
+                };
+
+                const waveConfig = waveTypes[waveTypeNumber];
+
+                // Create new surface with wave configuration
+                const newSurface = new WaveSurface(waveConfig);
+
+                return newSurface;
+            }
+
+            // Function to update surface based on wave type
+            function updateSurface(waveTypeNumber) {
+                // Remove old surface
+                if (surface) {
+                    scene.remove(surface.mesh);
+                }
+
+                // Create new surface
+                surface = createSurface(waveTypeNumber);
+
+                // Position the surface properly
+                surface.mesh.position.set(0, 0, 0);
+                surface.mesh.rotation.x = 0;
+                scene.add(surface.mesh);
+
+                // Debug: log surface info
+                console.log('Surface created with type:', waveTypeNumber);
+                console.log(
+                    'Mesh vertices:',
+                    surface.mesh.geometry.attributes.position.count
+                );
+                console.log(
+                    'Surface bounds:',
+                    surface.mesh.geometry.boundingBox
+                );
+
+                // Generate NDF histogram
+                surface.createNDFHistogram('ndf-plot');
+            }
+
+            // Create initial surface
+            let surface = null;
+
+            // Initialize with wave type 7 (swell + ripples)
+            updateSurface(11);
+
+            // Add dropdown event listener
+            document
+                .getElementById('wave-type-select')
+                .addEventListener('change', function (e) {
+                    const selectedWaveType = parseInt(e.target.value);
+                    updateSurface(selectedWaveType);
+                });
+
+            // Render
+            function animate() {
+                requestAnimationFrame(animate);
+                renderer.render(scene, camera);
+            }
+            animate();
+        </script>
+    </body>
+</html>

@@ -30,6 +30,8 @@ class CameraControls {
 
         this.setupEventListeners();
         this.updateCameraPosition();
+
+        this.locked = false; // Camera lock state
     }
 
     setupEventListeners() {
@@ -39,6 +41,8 @@ class CameraControls {
 
         // Mouse down event
         canvas.addEventListener('mousedown', event => {
+            if (this.locked) return;
+
             this.isDragging = true;
             this.lastMouseX = event.clientX;
             this.lastMouseY = event.clientY;
@@ -47,6 +51,8 @@ class CameraControls {
 
         // Mouse move event
         canvas.addEventListener('mousemove', event => {
+            if (this.locked) return;
+
             if (!this.isDragging) return;
 
             const deltaX = event.clientX - this.lastMouseX;
@@ -70,26 +76,28 @@ class CameraControls {
 
         // Mouse up event
         canvas.addEventListener('mouseup', () => {
+            if (this.locked) return;
+
             this.isDragging = false;
             canvas.style.cursor = 'grab';
         });
 
         // Mouse leave event
         canvas.addEventListener('mouseleave', () => {
+            if (this.locked) return;
+
             this.isDragging = false;
             canvas.style.cursor = 'default';
         });
 
         // Mouse wheel event for zooming
         canvas.addEventListener('wheel', event => {
+            if (this.locked) return;
+
             event.preventDefault();
 
             const zoomDelta = event.deltaY * this.zoomSpeed;
             this.distance += zoomDelta;
-            this.distance = Math.max(
-                this.minDistance,
-                Math.min(this.maxDistance, this.distance)
-            );
 
             this.updateCameraPosition();
         });
@@ -141,6 +149,10 @@ class CameraControls {
         this.yaw = 35.5;
         this.target.set(0, 0, 0);
         this.updateCameraPosition();
+    }
+
+    lockCamera() {
+        this.locked = !this.locked;
     }
 
     printCameraDetails() {
