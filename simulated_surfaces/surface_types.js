@@ -1,13 +1,12 @@
-const useLogScale = true; // Default to true, can be made configurable
-
 class WaveSurface {
-    constructor(wavetype) {
+    constructor(wavetype, asperities = []) {
         // Initialize wave parameters first
         this.numberOfWaves = wavetype.numberOfWaves;
         this.amplitudes = wavetype.amplitudes;
         this.wavelengths = wavetype.wavelengths;
         this.noiseLevels = wavetype.noiseLevels;
         this.orientations = wavetype.orientations;
+        this.asperities = asperities;
         this.mesh = this.generateSurface();
 
         this.bins = 100; // Number of bins for NDF histogram
@@ -17,10 +16,11 @@ class WaveSurface {
         this.ndfSamples = ndfData.ndfSamples;
         this.areaWeights = ndfData.areaWeights;
     }
+
     //generate a surface made from superpositions of sine waves going in different directions
     //return a mesh object
     generateSurface() {
-        const geometry = new THREE.PlaneGeometry(1000, 1000, 128, 128);
+        const geometry = new THREE.PlaneGeometry(2000, 2000, 128, 128);
         const vertices = geometry.attributes.position.array;
 
         // one fixed phase per wave (not per vertex!)
@@ -34,6 +34,7 @@ class WaveSurface {
             const y = vertices[i + 1];
             let z = 0;
 
+            // Add waves
             for (let j = 0; j < this.numberOfWaves; j++) {
                 const amplitude = this.amplitudes[j % this.amplitudes.length];
                 const wavelength =
@@ -60,6 +61,19 @@ class WaveSurface {
                 z += wave + noise;
             }
 
+            // Add asperities (sharp peaks using Gaussian function)
+            for (const asp of this.asperities) {
+                const dx = x - asp.x;
+                const dy = y - asp.y;
+                const distSq = dx * dx + dy * dy;
+                const sigma = asp.width;
+
+                // Gaussian peak: height * exp(-dist^2 / (2*sigma^2))
+                const asperityHeight =
+                    asp.height * Math.exp(-distSq / (2 * sigma * sigma));
+                z += asperityHeight;
+            }
+
             vertices[i + 2] = z;
         }
 
@@ -74,275 +88,196 @@ class WaveSurface {
         return new THREE.Mesh(geometry, material);
     }
 
-    saveSurfaceAsOBJ() {
-        const exporter = new THREE.OBJExporter();
-        const objData = exporter.parse(this.mesh);
-        const blob = new Blob([objData], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'wave_surface.obj';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    }
-
-    getSurfaceParams() {
-        //return number of waves, amplitudes, wavelengths, noise levels, orientations in a pretty print
-        const params = {
-            numberOfWaves: this.numberOfWaves,
-            amplitudes: this.amplitudes,
-            wavelengths: this.wavelengths,
-            noiseLevels: this.noiseLevels,
-            orientations: this.orientations,
-        };
-        return JSON.stringify(params, null, 2);
-    }
-
     // ——— NDF implementation (Z-up coordinate system)
     normalsToNdfXY(normals) {
-        const ndfSamples = [];
+        // Take (nx, ny, nz) → place in unit circle as (nx/sqrt(nx²+ny²+nz²), ny/sqrt(nx²+ny²+nz²))
+        // effectively projecting from sphere onto XY plane ignoring Z
+        const ndfXY = [];
         for (const n of normals) {
-            const normal = n.clone().normalize();
-            const nz = Math.abs(normal.z); // Ensure positive for upper hemisphere
-            const nx = normal.x;
-            const ny = normal.y;
-            const theta = Math.acos(Math.min(nz, 1.0)); // Clamp to avoid numerical errors
-            const phi = Math.atan2(ny, nx);
-            const x = Math.cos(phi) * Math.sin(theta);
-            const y = Math.sin(phi) * Math.sin(theta);
-            ndfSamples.push({ x: x, y: y });
+            const mag = Math.sqrt(n.x * n.x + n.y * n.y + n.z * n.z);
+            if (mag > 1e-9) {
+                ndfXY.push({ x: n.x / mag, y: n.y / mag });
+            }
         }
-        return ndfSamples;
+        return ndfXY;
     }
 
-    calcRMSRoughness() {
-        const positions = this.mesh.geometry.attributes.position;
-        let sum = 0;
-        let sumSq = 0;
-        let count = 0;
-
-        for (let i = 2; i < positions.count; i += 3) {
-            const z = positions.getZ(i);
-            sum += z;
-            sumSq += z * z;
-            count++;
-        }
-
-        const mean = sum / count;
-        const variance = sumSq / count - mean * mean;
-        return Math.sqrt(Math.max(variance, 0));
-    }
-
-    // Build area-weighted face normals → NDF samples + weights (kept in sync with filtering)
+    // Build area-weighted face normals → NDF samples + weights
     areaWeightedNDF() {
-        const position = this.mesh.geometry.attributes.position;
-        const index = this.mesh.geometry.index;
-        if (!index) {
-            return { ndfSamples: [], areaWeights: [], normals: [] };
-        }
+        const geometry = this.mesh.geometry;
+        const positions = geometry.attributes.position.array;
+        const indices = geometry.index ? geometry.index.array : null;
 
-        const indexArray = index.array;
-        const areaWeights = [];
         const normals = [];
+        const areas = [];
 
-        for (let i = 0; i < indexArray.length; i += 3) {
-            const a = indexArray[i],
-                b = indexArray[i + 1],
-                c = indexArray[i + 2];
-            const v0 = new THREE.Vector3(
-                position.getX(a),
-                position.getY(a),
-                position.getZ(a)
-            );
-            const v1 = new THREE.Vector3(
-                position.getX(b),
-                position.getY(b),
-                position.getZ(b)
-            );
-            const v2 = new THREE.Vector3(
-                position.getX(c),
-                position.getY(c),
-                position.getZ(c)
-            );
+        if (indices) {
+            for (let i = 0; i < indices.length; i += 3) {
+                const i0 = indices[i] * 3;
+                const i1 = indices[i + 1] * 3;
+                const i2 = indices[i + 2] * 3;
 
-            const e1 = new THREE.Vector3().subVectors(v1, v0);
-            const e2 = new THREE.Vector3().subVectors(v2, v0);
-            const cross = new THREE.Vector3().crossVectors(e1, e2);
-            const area = cross.length() * 0.5;
-            if (area === 0) continue;
+                const v0 = new THREE.Vector3(
+                    positions[i0],
+                    positions[i0 + 1],
+                    positions[i0 + 2]
+                );
+                const v1 = new THREE.Vector3(
+                    positions[i1],
+                    positions[i1 + 1],
+                    positions[i1 + 2]
+                );
+                const v2 = new THREE.Vector3(
+                    positions[i2],
+                    positions[i2 + 1],
+                    positions[i2 + 2]
+                );
 
-            const n = cross.normalize();
-            normals.push(n);
-            areaWeights.push(area);
+                const e1 = new THREE.Vector3().subVectors(v1, v0);
+                const e2 = new THREE.Vector3().subVectors(v2, v0);
+                const cross = new THREE.Vector3().crossVectors(e1, e2);
+                const area = cross.length() * 0.5;
+
+                if (area > 1e-12) {
+                    cross.normalize();
+                    normals.push(cross);
+                    areas.push(area);
+                }
+            }
+        } else {
+            // Non-indexed
+            for (let i = 0; i < positions.length; i += 9) {
+                const v0 = new THREE.Vector3(
+                    positions[i],
+                    positions[i + 1],
+                    positions[i + 2]
+                );
+                const v1 = new THREE.Vector3(
+                    positions[i + 3],
+                    positions[i + 4],
+                    positions[i + 5]
+                );
+                const v2 = new THREE.Vector3(
+                    positions[i + 6],
+                    positions[i + 7],
+                    positions[i + 8]
+                );
+
+                const e1 = new THREE.Vector3().subVectors(v1, v0);
+                const e2 = new THREE.Vector3().subVectors(v2, v0);
+                const cross = new THREE.Vector3().crossVectors(e1, e2);
+                const area = cross.length() * 0.5;
+
+                if (area > 1e-12) {
+                    cross.normalize();
+                    normals.push(cross);
+                    areas.push(area);
+                }
+            }
         }
 
-        const ndfSamples = [];
-        const filteredWeights = [];
-        const filteredNormals = [];
-
-        for (let i = 0; i < normals.length; i++) {
-            const n = normals[i];
-            // Convert normal to proper NDF coordinates using spherical mapping
-            // Ensure normal is normalized
-            const normal = n.clone().normalize();
-
-            // Assuming Z-up coordinate system (nz should be positive for hemisphere)
-            const nz = Math.abs(normal.z); // Ensure positive for upper hemisphere
-            const nx = normal.x;
-            const ny = normal.y;
-
-            // Convert to spherical coordinates
-            const theta = Math.acos(Math.min(nz, 1.0)); // Angle from Z-axis
-            const phi = Math.atan2(ny, nx); // Azimuthal angle
-
-            // Map to NDF coordinates: (cos(φ)sin(θ), sin(φ)sin(θ))
-            const x = Math.cos(phi) * Math.sin(theta);
-            const y = Math.sin(phi) * Math.sin(theta);
-
-            ndfSamples.push({ x: x, y: y });
-            filteredWeights.push(areaWeights[i]);
-            filteredNormals.push(n);
-        }
-
-        this.ndfSamples = ndfSamples;
-        this.areaWeights = filteredWeights;
-        this.normals = filteredNormals;
-
-        return {
-            ndfSamples,
-            areaWeights: filteredWeights,
-            normals: filteredNormals,
-        };
+        const ndfSamples = this.normalsToNdfXY(normals);
+        return { ndfSamples, areaWeights: areas, normals };
     }
 
-    createNDFHistogram(plot_id) {
-        const ndfSamples = this.ndfSamples;
-        const areaWeights = this.areaWeights;
+    createNDFHistogram(plot_id, useLogScale = false) {
+        const container = document.getElementById(plot_id);
+        if (!container) {
+            console.warn('NDF plot container not found');
+            return;
+        }
 
         const bins = this.bins;
-        const histogram = new Array(bins * bins).fill(0);
-        const binSize = 2.0 / bins;
+        const size = 400;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        canvas.style.border = '1px solid #555';
+        canvas.style.borderRadius = '5px';
 
-        for (let i = 0; i < ndfSamples.length; i++) {
-            const sample = ndfSamples[i];
-            const weight = areaWeights[i];
-            const nx = sample.x; // cos(φ)sin(θ) - NDF coordinate
-            const ny = sample.y; // sin(φ)sin(θ) - NDF coordinate
+        const ctx = canvas.getContext('2d');
 
-            // Map to histogram bins - centered at origin with radius constraint
-            const binX = Math.floor((nx + 1.0) / binSize);
-            const binY = Math.floor((ny + 1.0) / binSize);
-            if (binX >= 0 && binX < bins && binY >= 0 && binY < bins) {
-                histogram[binY * bins + binX] += weight;
+        // Clear background
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(0, 0, size, size);
+
+        // Build 2D histogram
+        const gridSize = bins;
+        const histogram = Array(gridSize)
+            .fill(0)
+            .map(() => Array(gridSize).fill(0));
+
+        for (let i = 0; i < this.ndfSamples.length; i++) {
+            const sample = this.ndfSamples[i];
+            const weight = this.areaWeights[i];
+
+            // Map [-1,1] → [0, gridSize-1]
+            const binX = Math.floor(((sample.x + 1) / 2) * gridSize);
+            const binY = Math.floor(((sample.y + 1) / 2) * gridSize);
+
+            const clampedX = Math.max(0, Math.min(gridSize - 1, binX));
+            const clampedY = Math.max(0, Math.min(gridSize - 1, binY));
+
+            histogram[clampedY][clampedX] += weight;
+        }
+
+        // Find max for normalization
+        let maxVal = 0;
+        for (let row of histogram) {
+            for (let val of row) {
+                if (val > maxVal) maxVal = val;
             }
         }
-        // render histogram into a canvas, produce a CanvasTexture and (if a DOM target exists) display it
 
-        // create a small offscreen canvas where each bin is one pixel
-        const off = document.createElement('canvas');
-        off.width = bins;
-        off.height = bins;
-        const octx = off.getContext('2d');
-
-        // compute max for normalization
-        let maxVal = 0;
-        for (let i = 0; i < histogram.length; i++) {
-            if (histogram[i] > maxVal) maxVal = histogram[i];
-        }
-        if (maxVal === 0) maxVal = 1.0;
-
-        // draw pixels (flip Y so histogram[0] is bottom-left visually)
-        for (let by = 0; by < bins; by++) {
-            for (let bx = 0; bx < bins; bx++) {
-                const idx = by * bins + bx;
-                const v = histogram[idx];
-                // Inside unit circle - render NDF data
-                let t = v / maxVal; // linear [0,1]
-                // Apply mild log-like compression for better visual contrast (controlled by flag)
-                if (useLogScale) {
-                    t = Math.log10(1 + 9 * t) / Math.log10(10);
+        // Draw histogram with color mapping (blue to red heatmap)
+        const cellSize = size / gridSize;
+        for (let row = 0; row < gridSize; row++) {
+            for (let col = 0; col < gridSize; col++) {
+                let intensity = histogram[row][col] / maxVal;
+                if (useLogScale && intensity > 0) {
+                    intensity = Math.log(1 + intensity * 9) / Math.log(10);
                 }
 
-                // map to color: blue (low) -> cyan -> yellow -> red (high)
-                const hue = 240 * (1 - t); // 240 (blue) -> 0 (red)
-                const light = 30 + 50 * t; // darker low, brighter high
-                octx.fillStyle = `hsl(${hue}, 100%, ${light}%)`;
+                // Color mapping: blue (low) -> cyan -> green -> yellow -> red (high)
+                let r, g, b;
+                if (intensity < 0.25) {
+                    // Blue to Cyan
+                    const t = intensity / 0.25;
+                    r = 0;
+                    g = Math.floor(t * 255);
+                    b = 255;
+                } else if (intensity < 0.5) {
+                    // Cyan to Green
+                    const t = (intensity - 0.25) / 0.25;
+                    r = 0;
+                    g = 255;
+                    b = Math.floor((1 - t) * 255);
+                } else if (intensity < 0.75) {
+                    // Green to Yellow
+                    const t = (intensity - 0.5) / 0.25;
+                    r = Math.floor(t * 255);
+                    g = 255;
+                    b = 0;
+                } else {
+                    // Yellow to Red
+                    const t = (intensity - 0.75) / 0.25;
+                    r = 255;
+                    g = Math.floor((1 - t) * 255);
+                    b = 0;
+                }
 
-                // pixel coordinates: y should be inverted so binY=0 is bottom
-                const py = bins - 1 - by;
-                octx.fillRect(bx, py, 1, 1);
+                ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                ctx.fillRect(
+                    col * cellSize,
+                    row * cellSize,
+                    cellSize,
+                    cellSize
+                );
             }
         }
 
-        // create a display canvas with fixed size independent of bin count
-        const displayW = 580; // Fixed width
-        const displayH = 580; // Fixed height
-        const displayCanvas = document.createElement('canvas');
-        displayCanvas.width = displayW;
-        displayCanvas.height = displayH;
-        const dctx = displayCanvas.getContext('2d');
-        // upscale using nearest neighbor so pixels stay crisp
-        dctx.imageSmoothingEnabled = false;
-        dctx.drawImage(off, 0, 0, displayW, displayH);
-
-        // Draw surface parameters text on top of the histogram
-        dctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; // Semi-transparent background
-        dctx.fillRect(5, 5, displayW - 10, 95);
-
-        dctx.fillStyle = 'white';
-        dctx.font = '12px Arial';
-        dctx.textAlign = 'left';
-
-        // Format parameters in readable way
-        let yPos = 20;
-        dctx.fillText(`Waves: ${this.numberOfWaves}`, 10, yPos);
-        yPos += 15;
-        dctx.fillText(`Amplitudes: [${this.amplitudes.join(', ')}]`, 10, yPos);
-        yPos += 15;
-        dctx.fillText(
-            `Wavelengths: [${this.wavelengths.join(', ')}]`,
-            10,
-            yPos
-        );
-        yPos += 15;
-        dctx.fillText(`Noise: [${this.noiseLevels.join(', ')}]`, 10, yPos);
-        yPos += 15;
-        const orientationsDeg = this.orientations.map(o =>
-            Math.round((o * 180) / Math.PI)
-        );
-        dctx.fillText(
-            `Orientations: [${orientationsDeg.join('°, ')}°]`,
-            10,
-            yPos
-        );
-        dctx.fillText(
-            `RMS Roughness: ${this.calcRMSRoughness().toFixed(4)} px`,
-            10,
-            yPos + 15
-        );
-
-        // keep references for later updates
-        this._ndfHistogramCanvas = displayCanvas;
-
-        // If there is a DOM element to show the histogram, put the canvas there
-        const plotEl = document.getElementById(plot_id);
-        if (plotEl) {
-            // clear existing content and append the canvas
-            plotEl.innerHTML = '';
-
-            // Add the title back
-            const title = document.createElement('h3');
-            title.textContent = 'NDF Histogram';
-            title.style.color = 'white';
-            title.style.margin = '0 0 10px 0';
-            title.style.fontFamily = 'Arial, sans-serif';
-            title.style.fontSize = '14px';
-            plotEl.appendChild(title);
-
-            // Add the canvas with parameters drawn on top
-            plotEl.appendChild(displayCanvas);
-        }
+        // Clear and add title + canvas
+        container.innerHTML = '<h3>Normal Distribution Function</h3>';
+        container.appendChild(canvas);
     }
 }

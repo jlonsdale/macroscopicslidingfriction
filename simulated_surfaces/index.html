@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
@@ -19,7 +19,6 @@
                 position: absolute;
                 top: 10px;
                 left: 10px;
-
                 padding: 10px;
                 z-index: 1000;
             }
@@ -33,20 +32,33 @@
                 position: absolute;
                 top: 10px;
                 right: 10px;
-                background-color: rgba(0, 0, 0, 0.8);
+                background-color: rgba(0, 0, 0, 0.9);
                 border: 2px solid #555;
                 border-radius: 5px;
-                padding: 10px;
+                padding: 15px;
                 z-index: 1000;
+                max-height: 90vh;
+                overflow-y: auto;
+                width: 300px;
+            }
+            #controls h3 {
+                color: white;
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+                margin: 0 0 10px 0;
+                border-bottom: 1px solid #555;
+                padding-bottom: 5px;
             }
             #controls label {
                 color: white;
                 font-family: Arial, sans-serif;
                 font-size: 12px;
                 display: block;
-                margin-bottom: 5px;
+                margin-bottom: 3px;
+                margin-top: 8px;
             }
-            #wave-type-select {
+            #controls input[type='number'] {
+                width: 100%;
                 padding: 5px;
                 border-radius: 3px;
                 border: 1px solid #666;
@@ -54,38 +66,124 @@
                 color: white;
                 font-family: Arial, sans-serif;
                 font-size: 12px;
+                box-sizing: border-box;
             }
-        </style>
-    </head>
-    <body>
-        <div id="canvas-container"></div>
-        <div id="ndf-plot"></div>
-        <div id="controls">
-            <label for="wave-type-select">Wave Type:</label>
-            <select id="wave-type-select">
-                <option value="7">Simple wave</option>
-                <option value="8">
-                    Ultra High Noise Isotropic (6 directions)
-                </option>
-                <option value="9">
-                    Isotropic Medium Roughness (6 directions)
-                </option>
-                <option value="10">
-                    Isotropic Ultra Smooth Low Noise (6 directions)
-                </option>
-                <option value="11">Flat Surface</option>
-                <option value="12">Simple Isotropic (3 directions)</option>
-                <option value="13">Basic Isotropic (4 directions)</option>
-                <option value="14">Gentle Isotropic (8 directions)</option>
-            </select>
-        </div>
-
-        <button
-            id="download-obj"
-            style="
+            #controls input[type='checkbox'] {
+                margin-right: 8px;
+                cursor: pointer;
+            }
+            #controls button {
+                width: 100%;
+                padding: 8px;
+                margin-top: 10px;
+                border-radius: 3px;
+                border: 1px solid #666;
+                background-color: #007bff;
+                color: white;
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+                cursor: pointer;
+            }
+            #controls button:hover {
+                background-color: #0056b3;
+            }
+            .wave-section {
+                border: 1px solid #444;
+                border-radius: 3px;
+                padding: 10px;
+                margin: 10px 0;
+                background-color: rgba(255, 255, 255, 0.05);
+            }
+            .wave-section h4 {
+                color: #aaa;
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+                margin: 0 0 8px 0;
+            }
+            .remove-wave-btn {
+                background-color: #dc3545;
+                padding: 4px 8px;
+                font-size: 10px;
+                margin-top: 5px;
+            }
+            .remove-wave-btn:hover {
+                background-color: #a71d2a;
+            }
+            .add-wave-btn {
+                background-color: #28a745;
+            }
+            .add-wave-btn:hover {
+                background-color: #1e7e34;
+            }
+            .add-asperity-btn {
+                background-color: #ff6600;
+            }
+            .add-asperity-btn:hover {
+                background-color: #cc5200;
+            }
+            .generate-asperities-btn {
+                background-color: #9933ff;
+            }
+            .generate-asperities-btn:hover {
+                background-color: #7722cc;
+            }
+            .clear-asperities-btn {
+                background-color: #666;
+            }
+            .clear-asperities-btn:hover {
+                background-color: #555;
+            }
+            #waves-container {
+                max-height: 400px;
+                overflow-y: auto;
+                margin-bottom: 10px;
+            }
+            .asperity-section {
+                border: 1px solid #ff6600;
+                border-radius: 3px;
+                padding: 10px;
+                margin: 10px 0;
+                background-color: rgba(255, 102, 0, 0.1);
+            }
+            .asperity-section h4 {
+                color: #ff9955;
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+                margin: 0 0 8px 0;
+            }
+            .settings-section {
+                border: 1px solid #555;
+                border-radius: 3px;
+                padding: 10px;
+                margin: 10px 0;
+                background-color: rgba(255, 255, 255, 0.03);
+            }
+            .stats-section {
+                border: 1px solid #9933ff;
+                border-radius: 3px;
+                padding: 10px;
+                margin: 10px 0;
+                background-color: rgba(153, 51, 255, 0.1);
+            }
+            .checkbox-label {
+                display: flex;
+                align-items: center;
+                color: white;
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+                margin: 8px 0;
+                cursor: pointer;
+            }
+            .button-container {
                 position: absolute;
                 bottom: 10px;
                 right: 10px;
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .action-button {
                 background-color: #007bff;
                 color: white;
                 border: none;
@@ -94,46 +192,401 @@
                 cursor: pointer;
                 font-family: Arial, sans-serif;
                 font-size: 12px;
-                z-index: 1000;
-            "
-        >
-            Download OBJ
-        </button>
-
-        <button
-            id="download-image"
-            style="
-                position: absolute;
-                bottom: 50px;
-                right: 10px;
+            }
+            .action-button.download-image {
                 background-color: #28a745;
-                color: white;
-                border: none;
-                padding: 10px 15px;
-                border-radius: 5px;
-                cursor: pointer;
-                font-family: Arial, sans-serif;
-                font-size: 12px;
-                z-index: 1000;
-            "
-        >
-            Download Image
-        </button>
+            }
+            .action-button:hover {
+                opacity: 0.9;
+            }
+            #asperities-container {
+                max-height: 300px;
+                overflow-y: auto;
+                margin-bottom: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="canvas-container"></div>
+        <div id="ndf-plot"></div>
+
+        <div id="controls">
+            <h3>Wave Parameters</h3>
+            <div id="waves-container"></div>
+            <button class="add-wave-btn" id="add-wave-btn">+ Add Wave</button>
+
+            <h3 style="margin-top: 20px">Asperities</h3>
+
+            <div class="stats-section">
+                <h4 style="color: #bb88ff; margin: 0 0 8px 0">
+                    Statistical Generation
+                </h4>
+
+                <label for="num-asperities">Number of Asperities:</label>
+                <input
+                    type="number"
+                    id="num-asperities"
+                    value="10"
+                    min="1"
+                    max="1000"
+                    step="1"
+                />
+
+                <label for="height-min">Height Range (Min):</label>
+                <input type="number" id="height-min" value="10" step="1" />
+
+                <label for="height-max">Height Range (Max):</label>
+                <input type="number" id="height-max" value="50" step="1" />
+
+                <label for="width-min">Width Range (Min):</label>
+                <input type="number" id="width-min" value="20" step="1" />
+
+                <label for="width-max">Width Range (Max):</label>
+                <input type="number" id="width-max" value="100" step="1" />
+
+                <button
+                    class="generate-asperities-btn"
+                    id="generate-asperities-btn"
+                >
+                    Generate Asperities
+                </button>
+            </div>
+
+            <div id="asperities-container"></div>
+            <button class="add-asperity-btn" id="add-asperity-btn">
+                + Add Single Random Asperity
+            </button>
+            <button class="clear-asperities-btn" id="clear-asperities-btn">
+                Clear All Asperities
+            </button>
+
+            <h3 style="margin-top: 20px">NDF Settings</h3>
+            <div class="settings-section">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="use-log-scale" />
+                    Use Log Scale for NDF
+                </label>
+            </div>
+        </div>
+
+        <div class="button-container">
+            <button class="action-button download-image" id="download-image">
+                Download Image
+            </button>
+            <button class="action-button" id="download-obj">
+                Download OBJ
+            </button>
+        </div>
+
+        <script>
+            // Wave configuration state
+            let waveConfig = {
+                numberOfWaves: 1,
+                amplitudes: [5.0],
+                wavelengths: [2.0],
+                noiseLevels: [1.5],
+                orientations: [Math.PI / 2],
+            };
+
+            // Asperities configuration
+            let asperities = [];
+
+            // NDF settings
+            let useLogScale = false;
+
+            // Function to handle input changes and update surface
+            function onInputChange() {
+                updateConfigFromInputs();
+                updateAsperitiesFromInputs();
+                updateSurface();
+            }
+
+            // Function to create wave input UI
+            function createWaveInput(index) {
+                const waveSection = document.createElement('div');
+                waveSection.className = 'wave-section';
+                waveSection.innerHTML = `
+                    <h4>Wave ${index + 1}</h4>
+                    <label for="amplitude-${index}">Amplitude:</label>
+                    <input type="number" id="amplitude-${index}" value="${waveConfig.amplitudes[index] || 1.0}" step="0.1" />
+                    
+                    <label for="wavelength-${index}">Wavelength:</label>
+                    <input type="number" id="wavelength-${index}" value="${waveConfig.wavelengths[index] || 100}" step="1" />
+                    
+                    <label for="noise-${index}">Noise Level:</label>
+                    <input type="number" id="noise-${index}" value="${waveConfig.noiseLevels[index] || 0.1}" step="0.01" />
+                    
+                    <label for="orientation-${index}">Orientation (radians):</label>
+                    <input type="number" id="orientation-${index}" value="${waveConfig.orientations[index] || 0}" step="0.1" />
+                    
+                    <button class="remove-wave-btn" data-index="${index}">Remove Wave</button>
+                `;
+                return waveSection;
+            }
+
+            // Function to create asperity input UI
+            function createAsperityInput(index) {
+                const asp = asperities[index];
+                const asperitySection = document.createElement('div');
+                asperitySection.className = 'asperity-section';
+                asperitySection.innerHTML = `
+                    <h4>Asperity ${index + 1}</h4>
+                    <label for="asp-height-${index}">Height:</label>
+                    <input type="number" id="asp-height-${index}" value="${asp.height.toFixed(2)}" step="1" />
+                    
+                    <label for="asp-width-${index}">Width:</label>
+                    <input type="number" id="asp-width-${index}" value="${asp.width.toFixed(2)}" step="1" />
+                    
+                    <label for="asp-x-${index}">X Position:</label>
+                    <input type="number" id="asp-x-${index}" value="${asp.x.toFixed(2)}" step="10" />
+                    
+                    <label for="asp-y-${index}">Y Position:</label>
+                    <input type="number" id="asp-y-${index}" value="${asp.y.toFixed(2)}" step="10" />
+                    
+                    <button class="remove-wave-btn" data-asp-index="${index}">Remove Asperity</button>
+                `;
+                return asperitySection;
+            }
+
+            // Function to render all wave inputs
+            function renderWaveInputs() {
+                const container = document.getElementById('waves-container');
+                container.innerHTML = '';
+
+                for (let i = 0; i < waveConfig.numberOfWaves; i++) {
+                    container.appendChild(createWaveInput(i));
+                }
+
+                // Add event listeners to all inputs for real-time updates
+                document
+                    .querySelectorAll('#waves-container input[type="number"]')
+                    .forEach(input => {
+                        input.addEventListener('input', onInputChange);
+                    });
+
+                // Add event listeners to remove buttons
+                document.querySelectorAll('.remove-wave-btn').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        if (index !== null && !isNaN(index)) {
+                            removeWave(index);
+                        }
+                    });
+                });
+            }
+
+            // Function to render all asperity inputs
+            function renderAsperityInputs() {
+                const container = document.getElementById(
+                    'asperities-container'
+                );
+                container.innerHTML = '';
+
+                for (let i = 0; i < asperities.length; i++) {
+                    container.appendChild(createAsperityInput(i));
+                }
+
+                // Add event listeners to all inputs for real-time updates
+                document
+                    .querySelectorAll(
+                        '#asperities-container input[type="number"]'
+                    )
+                    .forEach(input => {
+                        input.addEventListener('input', onInputChange);
+                    });
+
+                // Add event listeners to remove buttons
+                document.querySelectorAll('[data-asp-index]').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        const index = parseInt(
+                            this.getAttribute('data-asp-index')
+                        );
+                        removeAsperity(index);
+                    });
+                });
+            }
+
+            // Function to read values from inputs and update config
+            function updateConfigFromInputs() {
+                waveConfig.amplitudes = [];
+                waveConfig.wavelengths = [];
+                waveConfig.noiseLevels = [];
+                waveConfig.orientations = [];
+
+                for (let i = 0; i < waveConfig.numberOfWaves; i++) {
+                    const amplitude =
+                        parseFloat(
+                            document.getElementById(`amplitude-${i}`).value
+                        ) || 1.0;
+                    const wavelength =
+                        parseFloat(
+                            document.getElementById(`wavelength-${i}`).value
+                        ) || 100;
+                    const noise =
+                        parseFloat(
+                            document.getElementById(`noise-${i}`).value
+                        ) || 0.1;
+                    const orientation =
+                        parseFloat(
+                            document.getElementById(`orientation-${i}`).value
+                        ) || 0;
+
+                    waveConfig.amplitudes.push(amplitude);
+                    waveConfig.wavelengths.push(wavelength);
+                    waveConfig.noiseLevels.push(noise);
+                    waveConfig.orientations.push(orientation);
+                }
+            }
+
+            // Function to read asperity values from inputs
+            function updateAsperitiesFromInputs() {
+                for (let i = 0; i < asperities.length; i++) {
+                    const heightEl = document.getElementById(`asp-height-${i}`);
+                    const widthEl = document.getElementById(`asp-width-${i}`);
+                    const xEl = document.getElementById(`asp-x-${i}`);
+                    const yEl = document.getElementById(`asp-y-${i}`);
+
+                    if (heightEl)
+                        asperities[i].height = parseFloat(heightEl.value) || 10;
+                    if (widthEl)
+                        asperities[i].width = parseFloat(widthEl.value) || 50;
+                    if (xEl) asperities[i].x = parseFloat(xEl.value) || 0;
+                    if (yEl) asperities[i].y = parseFloat(yEl.value) || 0;
+                }
+            }
+
+            // Function to add a wave
+            function addWave() {
+                waveConfig.numberOfWaves++;
+                waveConfig.amplitudes.push(1.0);
+                waveConfig.wavelengths.push(100);
+                waveConfig.noiseLevels.push(0.1);
+                waveConfig.orientations.push(0);
+                renderWaveInputs();
+                updateSurface();
+            }
+
+            // Function to remove a wave
+            function removeWave(index) {
+                if (waveConfig.numberOfWaves <= 1) {
+                    alert('Must have at least one wave');
+                    return;
+                }
+
+                waveConfig.numberOfWaves--;
+                waveConfig.amplitudes.splice(index, 1);
+                waveConfig.wavelengths.splice(index, 1);
+                waveConfig.noiseLevels.splice(index, 1);
+                waveConfig.orientations.splice(index, 1);
+                renderWaveInputs();
+                updateSurface();
+            }
+
+            // Function to generate multiple asperities based on statistics
+            function generateAsperities() {
+                const numAsperities =
+                    parseInt(document.getElementById('num-asperities').value) ||
+                    10;
+                const heightMin =
+                    parseFloat(document.getElementById('height-min').value) ||
+                    10;
+                const heightMax =
+                    parseFloat(document.getElementById('height-max').value) ||
+                    50;
+                const widthMin =
+                    parseFloat(document.getElementById('width-min').value) ||
+                    20;
+                const widthMax =
+                    parseFloat(document.getElementById('width-max').value) ||
+                    100;
+
+                // Clear existing asperities
+                asperities = [];
+
+                // Generate new asperities with random parameters within the specified ranges
+                for (let i = 0; i < numAsperities; i++) {
+                    const x = (Math.random() - 0.5) * 2000;
+                    const y = (Math.random() - 0.5) * 2000;
+                    const height =
+                        heightMin + Math.random() * (heightMax - heightMin);
+                    const width =
+                        widthMin + Math.random() * (widthMax - widthMin);
+
+                    asperities.push({ x, y, height, width });
+                }
+
+                renderAsperityInputs();
+                updateSurface();
+            }
+
+            // Function to add a random asperity
+            function addRandomAsperity() {
+                // Random position within the surface bounds (-1000 to 1000 for a 2000x2000 surface)
+                const x = (Math.random() - 0.5) * 2000;
+                const y = (Math.random() - 0.5) * 2000;
+
+                asperities.push({
+                    x: x,
+                    y: y,
+                    height: 20 + Math.random() * 30, // Random height between 20 and 50
+                    width: 30 + Math.random() * 70, // Random width between 30 and 100
+                });
+
+                renderAsperityInputs();
+                updateSurface();
+            }
+
+            // Function to remove an asperity
+            function removeAsperity(index) {
+                asperities.splice(index, 1);
+                renderAsperityInputs();
+                updateSurface();
+            }
+
+            // Function to clear all asperities
+            function clearAsperities() {
+                asperities = [];
+                renderAsperityInputs();
+                updateSurface();
+            }
+
+            // Add wave button event listener
+            document
+                .getElementById('add-wave-btn')
+                .addEventListener('click', addWave);
+
+            // Add asperity button event listener
+            document
+                .getElementById('add-asperity-btn')
+                .addEventListener('click', addRandomAsperity);
+
+            // Generate asperities button event listener
+            document
+                .getElementById('generate-asperities-btn')
+                .addEventListener('click', generateAsperities);
+
+            // Clear asperities button event listener
+            document
+                .getElementById('clear-asperities-btn')
+                .addEventListener('click', clearAsperities);
+
+            // Add log scale toggle event listener
+            document
+                .getElementById('use-log-scale')
+                .addEventListener('change', function (e) {
+                    useLogScale = e.target.checked;
+                    // Only update NDF, don't regenerate surface
+                    if (surface) {
+                        surface.createNDFHistogram('ndf-plot', useLogScale);
+                    }
+                });
+        </script>
 
         <script>
             // Add download image functionality
             document
                 .getElementById('download-image')
                 .addEventListener('click', function () {
-                    const waveTypeSelect =
-                        document.getElementById('wave-type-select');
-                    const selectedWaveType = waveTypeSelect.value;
-                    const waveTypeName = waveTypeSelect.options[
-                        waveTypeSelect.selectedIndex
-                    ].text
-                        .replace(/[^a-zA-Z0-9]/g, '_')
-                        .toLowerCase();
-
                     // Render the current scene to get the latest image
                     renderer.render(scene, camera);
 
@@ -144,7 +597,7 @@
                     // Create and download the image
                     const a = document.createElement('a');
                     a.href = dataURL;
-                    a.download = `wavetype_${selectedWaveType}.png`;
+                    a.download = `wave_surface_${Date.now()}.png`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -196,16 +649,7 @@
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    const waveTypeSelect =
-                        document.getElementById('wave-type-select');
-                    const selectedWaveType = waveTypeSelect.value;
-                    const waveTypeName = waveTypeSelect.options[
-                        waveTypeSelect.selectedIndex
-                    ].text
-                        .replace(/[^a-zA-Z0-9]/g, '_')
-                        .toLowerCase();
-
-                    a.download = `surface_${selectedWaveType}.obj`;
+                    a.download = `surface_${Date.now()}.obj`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -218,150 +662,6 @@
         <script src="surface_types.js"></script>
 
         <script>
-            // 1 well defined wave
-            const waveType7 = {
-                numberOfWaves: 1,
-                amplitudes: [2.0],
-                wavelengths: [2.0],
-                noiseLevels: [0.1],
-                orientations: [0],
-            };
-
-            // Wave type 8 - High Noise Isotropic (6 directions)
-            const waveType8 = {
-                numberOfWaves: 12,
-
-                // descending amplitudes so no single wave dominates
-                amplitudes: [
-                    3.5, 3.0, 2.8, 2.5, 2.2, 2.0, 1.8, 1.6, 1.4, 1.2, 1.0, 0.8,
-                ],
-
-                // short wavelengths = high spatial frequency
-                wavelengths: [45, 42, 38, 35, 32, 30, 28, 26, 24, 22, 20, 18],
-
-                // aggressive noise — this is what makes it *very* noisy
-                noiseLevels: [
-                    1.2, 1.1, 1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6,
-                    0.55,
-                ],
-
-                // isotropic: evenly spaced angles over [0, 2π)
-                orientations: [
-                    0,
-                    Math.PI / 6,
-                    Math.PI / 3,
-                    Math.PI / 2,
-                    (2 * Math.PI) / 3,
-                    (5 * Math.PI) / 6,
-                    Math.PI,
-                    (7 * Math.PI) / 6,
-                    (4 * Math.PI) / 3,
-                    (3 * Math.PI) / 2,
-                    (5 * Math.PI) / 3,
-                    (11 * Math.PI) / 6,
-                ],
-            };
-
-            // Wave type 9 - Isotropic Medium Roughness (6 evenly distributed directions)
-            const waveType9 = {
-                numberOfWaves: 5,
-                amplitudes: [3.0, 1.2, 1.0, 0.8, 0.6],
-                wavelengths: [220, 45, 35, 28, 22],
-                noiseLevels: [0.05, 0.1, 0.1, 0.12, 0.12],
-                orientations: [
-                    Math.PI / 8,
-                    0,
-                    Math.PI / 3,
-                    -Math.PI / 4,
-                    Math.PI / 2,
-                ],
-            };
-
-            // Wave type 10 - Isotropic Ultra Smooth Low Noise (6 evenly distributed directions)
-            const waveType10 = {
-                numberOfWaves: 6,
-                amplitudes: [2.0, 1.8, 1.6, 1.4, 1.2, 1.0],
-                wavelengths: [920.5, 400.0, 900.5, 300.0, 200.5, 1000.0],
-                noiseLevels: [0.3, 0.32, 0.35, 0.38, 0.4, 0.42],
-                orientations: [
-                    0, // 0°
-                    Math.PI / 3, // 60°
-                    (2 * Math.PI) / 3, // 120°
-                    Math.PI, // 180°
-                    (4 * Math.PI) / 3, // 240°
-                    (5 * Math.PI) / 3, // 300°
-                ],
-            };
-
-            // Wave type 11 - Flat Surface
-            const waveType11 = {
-                numberOfWaves: 6,
-
-                // extremely low amplitude
-                amplitudes: [0.35, 0.3, 0.25, 0.2, 0.15, 0.1],
-
-                // very long wavelengths = smooth curvature
-                wavelengths: [320, 280, 240, 200, 180, 160],
-
-                // almost no noise
-                noiseLevels: [0.09, 0.01, 0.01, 0.01, 0.01, 0.01],
-
-                // evenly distributed directions (isotropic)
-                orientations: [
-                    0,
-                    Math.PI / 3,
-                    (2 * Math.PI) / 3,
-                    Math.PI,
-                    (4 * Math.PI) / 3,
-                    (5 * Math.PI) / 3,
-                ],
-            };
-
-            // Wave type 12 - Simple Isotropic (3 directions, evenly spaced)
-            const waveType12 = {
-                numberOfWaves: 3,
-                amplitudes: [1.5, 1.5, 1.5],
-                wavelengths: [80, 80, 80],
-                noiseLevels: [0.2, 0.2, 0.2],
-                orientations: [
-                    0, // 0°
-                    (2 * Math.PI) / 3, // 120°
-                    (4 * Math.PI) / 3, // 240°
-                ],
-            };
-
-            // Wave type 13 - Basic Isotropic (4 directions, cardinal + diagonal)
-            const waveType13 = {
-                numberOfWaves: 4,
-                amplitudes: [1.2, 1.2, 1.2, 1.2],
-                wavelengths: [60, 60, 60, 60],
-                noiseLevels: [0.3, 0.3, 0.3, 0.3],
-                orientations: [
-                    0, // 0°
-                    Math.PI / 2, // 90°
-                    Math.PI, // 180°
-                    (3 * Math.PI) / 2, // 270°
-                ],
-            };
-
-            // Wave type 14 - Gentle Isotropic (8 directions, very even distribution)
-            const waveType14 = {
-                numberOfWaves: 8,
-                amplitudes: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
-                wavelengths: [120, 120, 120, 120, 120, 120, 120, 120],
-                noiseLevels: [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15],
-                orientations: [
-                    0, // 0°
-                    Math.PI / 4, // 45°
-                    Math.PI / 2, // 90°
-                    (3 * Math.PI) / 4, // 135°
-                    Math.PI, // 180°
-                    (5 * Math.PI) / 4, // 225°
-                    (3 * Math.PI) / 2, // 270°
-                    (7 * Math.PI) / 4, // 315°
-                ],
-            };
-
             // Scene setup
             let scene, camera, renderer;
 
@@ -371,7 +671,7 @@
                 75,
                 window.innerWidth / window.innerHeight,
                 0.1,
-                1000
+                5000 // Increased far clipping plane for larger surface
             );
             renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -383,23 +683,19 @@
             let camera_controls = new CameraControls(camera, renderer);
 
             // Lock camera at specified position and disable controls
-            camera_controls.distance = 860;
+            camera_controls.distance = 1720; // Doubled from 860
             camera_controls.pitch = 0;
             camera_controls.yaw = 90;
             camera_controls.target.set(0, 0, 0);
             camera_controls.updateCameraPosition();
 
-            // Set exact camera position and rotation
+            // Set exact camera position and rotation (adjusted for 2x larger surface)
             camera.position.set(
-                5.24173770331938e-14,
-                82.42734716739263,
-                856.0407305957738
+                0,
+                164.85, // Roughly doubled y position
+                1712.08 // Roughly doubled z position
             );
-            camera.rotation.set(
-                -0.0959931088596881,
-                6.095043841069048e-17,
-                5.868859701788084e-18
-            );
+            camera.rotation.set(-0.0959931088596881, 0, 0);
 
             // Disable camera controls to lock position
             camera_controls.lockCamera();
@@ -417,58 +713,36 @@
                 }
             });
 
-            // Add lighting setup
+            // Add lighting setup (adjusted for larger scene)
             // Ambient light for overall illumination
             const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
             scene.add(ambientLight);
 
-            // Main directional light (sun-like)
+            // Main directional light (sun-like) - positioned farther out
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(100, 200, 100);
+            directionalLight.position.set(200, 400, 200); // Doubled
             directionalLight.castShadow = true;
             scene.add(directionalLight);
 
             // Fill light from the opposite direction
             const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
-            fillLight.position.set(-50, 50, -50);
+            fillLight.position.set(-100, 100, -100); // Doubled
             scene.add(fillLight);
 
             // Point light for additional highlights
-            const pointLight = new THREE.PointLight(0xffffff, 0.5, 500);
-            pointLight.position.set(50, 100, 50);
+            const pointLight = new THREE.PointLight(0xffffff, 0.5, 1000); // Doubled range
+            pointLight.position.set(100, 200, 100); // Doubled
             scene.add(pointLight);
 
-            // Function to create surface with given wave type
-            function createSurface(waveTypeNumber) {
-                // Get the wave type configuration
-                const waveTypes = {
-                    7: waveType7,
-                    8: waveType8,
-                    9: waveType9,
-                    10: waveType10,
-                    11: waveType11,
-                    12: waveType12,
-                    13: waveType13,
-                    14: waveType14,
-                };
-
-                const waveConfig = waveTypes[waveTypeNumber];
-
-                // Create new surface with wave configuration
-                const newSurface = new WaveSurface(waveConfig);
-
-                return newSurface;
-            }
-
-            // Function to update surface based on wave type
-            function updateSurface(waveTypeNumber) {
+            // Function to update surface based on wave config
+            function updateSurface() {
                 // Remove old surface
                 if (surface) {
                     scene.remove(surface.mesh);
                 }
 
-                // Create new surface
-                surface = createSurface(waveTypeNumber);
+                // Create new surface with current wave configuration and asperities
+                surface = new WaveSurface(waveConfig, asperities);
 
                 // Position the surface properly
                 surface.mesh.position.set(0, 0, 0);
@@ -476,35 +750,26 @@
                 scene.add(surface.mesh);
 
                 // Debug: log surface info
-                console.log('Surface created with type:', waveTypeNumber);
+                console.log('Surface created with config:', waveConfig);
+                console.log('Asperities:', asperities);
                 console.log(
                     'Mesh vertices:',
                     surface.mesh.geometry.attributes.position.count
                 );
-                console.log(
-                    'Surface bounds:',
-                    surface.mesh.geometry.boundingBox
-                );
 
                 // Generate NDF histogram
-                surface.createNDFHistogram('ndf-plot');
+                surface.createNDFHistogram('ndf-plot', useLogScale);
             }
 
             // Create initial surface
             let surface = null;
 
-            // Initialize with wave type 7 (swell + ripples)
-            updateSurface(11);
+            // Initialize UI and surface
+            renderWaveInputs();
+            renderAsperityInputs();
+            updateSurface();
 
-            // Add dropdown event listener
-            document
-                .getElementById('wave-type-select')
-                .addEventListener('change', function (e) {
-                    const selectedWaveType = parseInt(e.target.value);
-                    updateSurface(selectedWaveType);
-                });
-
-            // Render
+            // Render loop
             function animate() {
                 requestAnimationFrame(animate);
                 renderer.render(scene, camera);
