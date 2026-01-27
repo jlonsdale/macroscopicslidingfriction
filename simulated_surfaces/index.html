@@ -276,19 +276,22 @@
             <button class="action-button" id="download-obj">
                 Download OBJ
             </button>
+            <button class="action-button" id="save-settings">
+                Save Settings
+            </button>
         </div>
 
         <script>
             // Wave configuration state
             let waveConfig = {
                 numberOfWaves: 1,
-                amplitudes: [5.0],
-                wavelengths: [2.0],
-                noiseLevels: [1.5],
-                orientations: [Math.PI / 2],
+                amplitudes: [2.0],
+                wavelengths: [100],
+                noiseLevels: [0.5],
+                orientations: [0],
             };
 
-            // Asperities configuration
+            // Asperities configuration - rough surface
             let asperities = [];
 
             // NDF settings
@@ -316,8 +319,8 @@
                     <label for="noise-${index}">Noise Level:</label>
                     <input type="number" id="noise-${index}" value="${waveConfig.noiseLevels[index] || 0.1}" step="0.01" />
                     
-                    <label for="orientation-${index}">Orientation (radians):</label>
-                    <input type="number" id="orientation-${index}" value="${waveConfig.orientations[index] || 0}" step="0.1" />
+                    <label for="orientation-${index}">Orientation (degrees):</label>
+                    <input type="number" id="orientation-${index}" value="${(((waveConfig.orientations[index] || 0) * 180) / Math.PI).toFixed(1)}" step="1" />
                     
                     <button class="remove-wave-btn" data-index="${index}">Remove Wave</button>
                 `;
@@ -426,10 +429,11 @@
                         parseFloat(
                             document.getElementById(`noise-${i}`).value
                         ) || 0.1;
-                    const orientation =
+                    const orientationDegrees =
                         parseFloat(
                             document.getElementById(`orientation-${i}`).value
                         ) || 0;
+                    const orientation = (orientationDegrees * Math.PI) / 180;
 
                     waveConfig.amplitudes.push(amplitude);
                     waveConfig.wavelengths.push(wavelength);
@@ -655,6 +659,62 @@
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                 });
+        </script>
+
+        <script>
+            // Add save settings functionality
+            document
+                .getElementById('save-settings')
+                .addEventListener('click', function () {
+                    // Gather current settings
+                    let settingsText = '# Wave Surface Settings\n';
+                    settingsText += `# Generated: ${new Date().toLocaleString()}\n\n`;
+
+                    settingsText += '## Wave Configuration\n';
+                    settingsText += `Number of Waves: ${waveConfig.numberOfWaves}\n\n`;
+
+                    for (let i = 0; i < waveConfig.numberOfWaves; i++) {
+                        settingsText += `Wave ${i + 1}:\n`;
+                        settingsText += `  Amplitude: ${waveConfig.amplitudes[i]}\n`;
+                        settingsText += `  Wavelength: ${waveConfig.wavelengths[i]}\n`;
+                        settingsText += `  Noise Level: ${waveConfig.noiseLevels[i]}\n`;
+                        settingsText += `  Orientation: ${((waveConfig.orientations[i] * 180) / Math.PI).toFixed(2)}° (${waveConfig.orientations[i].toFixed(4)} radians)\n\n`;
+                    }
+
+                    settingsText += '## Asperities\n';
+                    settingsText += `Number of Asperities: ${asperities.length}\n\n`;
+
+                    for (let i = 0; i < asperities.length; i++) {
+                        settingsText += `Asperity ${i + 1}:\n`;
+                        settingsText += `  Height: ${asperities[i].height}\n`;
+                        settingsText += `  Width: ${asperities[i].width}\n`;
+                        settingsText += `  X Position: ${asperities[i].x}\n`;
+                        settingsText += `  Y Position: ${asperities[i].y}\n\n`;
+                    }
+
+                    settingsText += '## NDF Settings\n';
+                    settingsText += `Use Log Scale: ${useLogScale}\n`;
+
+                    // Create and download file
+                    const blob = new Blob([settingsText], {
+                        type: 'text/plain',
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `surface_settings_${Date.now()}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `surface_${Date.now()}.obj`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         </script>
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
