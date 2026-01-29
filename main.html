@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Rigid Body Viewer</title>
+        <style>
+            body {
+                margin: 0;
+                overflow: hidden;
+                font-family: Arial, sans-serif;
+            }
+            #canvas-container {
+                width: 100vw;
+                height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background-color: #1a1a1a;
+            }
+            #error-message {
+                color: #ff6b6b;
+                font-size: 18px;
+                text-align: center;
+                padding: 20px;
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+            }
+            #upload-container {
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                background: rgba(255, 255, 255, 0.9);
+                padding: 15px;
+                border-radius: 8px;
+            }
+            input[type='file'] {
+                display: block;
+                margin: 10px 0;
+            }
+            canvas {
+                display: none;
+            }
+            canvas.active {
+                display: block;
+            }
+        </style>
+        <!-- Three.js -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+        <!-- Your JS files -->
+        <script src="./scripts/main.js"></script>
+        <script src="./scripts/cube.js"></script>
+        <script src="./scripts/plane.js"></script>
+        <script src="./scripts/camera-controls.js"></script>
+        <script src="./scripts/surface_new.js"></script>
+        <script src="./scripts/gs-rigidbodysim.js"></script>
+        <script src="./scripts/debugging.js"></script>
+        <script src="./scripts/friction.js"></script>
+    </head>
+    <body>
+        <div id="upload-container">
+            <label>Upload first .obj surface:</label>
+            <input type="file" id="obj1" accept=".obj" />
+            <label>Upload second .obj surface:</label>
+            <input type="file" id="obj2" accept=".obj" />
+            <button
+                id="start-button"
+                disabled
+                style="background-color: #ccc; cursor: not-allowed"
+            >
+                Start Simulation
+            </button>
+
+            <button
+                onclick="
+                    window.open('./simulated_surfaces/index.html', '_blank')
+                "
+                style="margin: 8px 0px; cursor: pointer"
+            >
+                Create obj files here
+            </button>
+
+            <h3>Instantaneous Velocity</h3>
+            <div>
+                <label>X:</label>
+                <input type="number" id="velocityX" value="0" step="1" />
+            </div>
+            <div>
+                <label>Y:</label>
+                <input type="number" id="velocityY" value="0" step="1" />
+            </div>
+            <div>
+                <label>Z:</label>
+                <input type="number" id="velocityZ" value="0" step="1" />
+            </div>
+            <button id="apply-velocity" style="margin: 8px 0px">Apply</button>
+        </div>
+
+        <div id="canvas-container">
+            <div id="error-message">Please upload 2 .obj surfaces to begin</div>
+            <canvas id="threejs-canvas"></canvas>
+        </div>
+
+        <script type="module"></script>
+    </body>
+</html>

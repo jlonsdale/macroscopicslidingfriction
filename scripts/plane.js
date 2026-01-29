@@ -21,7 +21,7 @@ class Plane {
         } else {
             this.material = new THREE.MeshLambertMaterial({
                 map: texture,
-                color: 0x00ff88, // White to let texture show through
+                color: 0xff69b4, // Pink
             });
         }
 

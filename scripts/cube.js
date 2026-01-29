@@ -32,7 +32,7 @@ class Cube {
         } else {
             this.material = new THREE.MeshLambertMaterial({
                 map: texture,
-                color: 0x0000ff,
+                color: 0x00ffff,
             });
         }
 

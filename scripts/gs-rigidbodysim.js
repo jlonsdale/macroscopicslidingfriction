@@ -10,22 +10,22 @@ class GSRigidBodySim {
         this.friction = friction;
 
         // Fixed timestep ~60 Hz
-        this.dt = 1 / 60;
+        this.dt = 1 / 90;
         this.gravity = new THREE.Vector3(0, -9.81, 0);
 
         // Material params
         this.restitution = 0.05; // 0 = inelastic, 1 = perfectly elastic
 
         // Stabilization (Baumgarte) and slop
-        this.beta = 0.2; // error reduction parameter [0..1]
+        this.beta = 0.1; // error reduction parameter [0..1]
         this.penetrationSlop = 0.005; // meters allowed before correcting
 
         // Damping
-        this.linearDamping = 0.01;
-        this.angularDamping = 0.01;
+        this.linearDamping = 0.1;
+        this.angularDamping = 0.1;
 
         // Solver tuning
-        this.gsIterations = 12; // 8–20 typical
+        this.gsIterations = 15; // 8–20 typical
         this.warmStartEnabled = true; // persist impulses across frames
         this.maxPreCorrectionContacts = 4; // cap position nudges to avoid over-correction
 

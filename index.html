@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
@@ -164,6 +164,44 @@
                 box-shadow: 0 4px 16px rgba(255, 107, 107, 0.3);
             }
 
+            .velocity-controls button.download {
+                background: linear-gradient(135deg, #48c774 0%, #34a853 100%);
+            }
+
+            .velocity-controls button.download:hover {
+                box-shadow: 0 4px 16px rgba(72, 199, 116, 0.3);
+            }
+
+            .velocity-controls button.toggle {
+                background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%);
+            }
+
+            .velocity-controls button.toggle:hover {
+                box-shadow: 0 4px 16px rgba(255, 167, 38, 0.3);
+            }
+
+            .velocity-controls button.toggle.active {
+                background: linear-gradient(135deg, #48c774 0%, #34a853 100%);
+            }
+
+            .velocity-controls button.toggle.active:hover {
+                box-shadow: 0 4px 16px rgba(72, 199, 116, 0.3);
+            }
+            .velocity-controls button.toggle {
+                background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%);
+            }
+
+            .velocity-controls button.toggle:hover {
+                box-shadow: 0 4px 16px rgba(255, 167, 38, 0.3);
+            }
+
+            .velocity-controls button.toggle.active {
+                background: linear-gradient(135deg, #48c774 0%, #34a853 100%);
+            }
+
+            .velocity-controls button.toggle.active:hover {
+                box-shadow: 0 4px 16px rgba(72, 199, 116, 0.3);
+            }
             .velocity-controls > div:last-child {
                 margin-top: 15px;
                 font-size: 10px;
@@ -188,6 +226,16 @@
             </div>
             <button onclick="applyVelocity()">Apply</button>
             <button class="reset" onclick="resetVelocity()">Reset</button>
+            <button class="download" onclick="downloadPositionLog()">
+                Download CSV
+            </button>
+            <button
+                class="toggle"
+                id="toggleLoggingBtn"
+                onclick="toggleLogging()"
+            >
+                Enable Logging
+            </button>
         </div>
 
         <div id="canvas-container"></div>
@@ -203,6 +251,39 @@
         <script src="./scripts/surface.js"></script>
         <script src="./scripts/gs-rigidbodysim.js"></script>
         <script src="./scripts/debugging.js"></script>
+
+        <script>
+            // Function to download position log as CSV
+            function downloadPositionLog() {
+                if (window.scene3D && window.scene3D.rigidBodySim) {
+                    window.scene3D.rigidBodySim.savelogasCSV();
+                } else {
+                    alert(
+                        'Simulation not initialized or no log data available'
+                    );
+                }
+            }
+
+            // Function to toggle logging on/off
+            function toggleLogging() {
+                if (window.scene3D && window.scene3D.rigidBodySim) {
+                    window.scene3D.rigidBodySim.toggleLogging();
+                    const btn = document.getElementById('toggleLoggingBtn');
+                    const isEnabled =
+                        window.scene3D.rigidBodySim.loggingEnabled;
+
+                    if (isEnabled) {
+                        btn.classList.add('active');
+                        btn.textContent = 'Disable Logging';
+                    } else {
+                        btn.classList.remove('active');
+                        btn.textContent = 'Enable Logging';
+                    }
+                } else {
+                    alert('Simulation not initialized');
+                }
+            }
+        </script>
         <script src="./scripts/friction.js"></script>
     </body>
 </html>
