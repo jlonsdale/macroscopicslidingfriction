@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Three.js Application</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+                background-color: #000;
+            }
+            #canvas-container {
+                width: 100vw;
+                height: 100vh;
+            }
+            h1 {
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                color: white;
+                font-family: Arial, sans-serif;
+                font-size: 2rem;
+                margin: 0;
+                z-index: 100;
+            }
+            .velocity-controls {
+                position: absolute;
+                top: 80px;
+                left: 20px;
+                background: rgba(0, 0, 0, 0.8);
+                padding: 15px;
+                border-radius: 8px;
+                font-family: Arial, sans-serif;
+                color: white;
+                z-index: 100;
+            }
+            .velocity-input {
+                display: flex;
+                align-items: center;
+                margin: 5px 0;
+                gap: 10px;
+            }
+            .velocity-input label {
+                min-width: 15px;
+                font-weight: bold;
+            }
+            .velocity-input input {
+                width: 80px;
+                padding: 5px;
+                background: rgba(255, 255, 255, 0.9);
+                border: 1px solid #333;
+                border-radius: 4px;
+                color: #000;
+                font-family: monospace;
+            }
+            .velocity-controls button {
+                background: #4caf50;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                margin: 10px 5px 0 0;
+                border-radius: 4px;
+                cursor: pointer;
+                font-family: Arial, sans-serif;
+            }
+            .velocity-controls button:hover {
+                background: #45a049;
+            }
+            .velocity-controls button.reset {
+                background: #f44336;
+            }
+            .velocity-controls button.reset:hover {
+                background: #da190b;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>JEngine MK4 - 3D Physics Engine</h1>
+        <style>
+            .velocity-controls {
+                position: absolute;
+                top: 80px;
+                left: 20px;
+                background: rgba(20, 20, 20, 0.95);
+                padding: 20px;
+                border-radius: 12px;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                color: white;
+                z-index: 100;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            }
+
+            .velocity-controls h3 {
+                margin: 0 0 15px 0;
+                font-size: 14px;
+                font-weight: 500;
+                color: #e0e0e0;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .velocity-input {
+                display: flex;
+                align-items: center;
+                margin: 8px 0;
+                gap: 12px;
+            }
+
+            .velocity-input label {
+                min-width: 12px;
+                font-weight: 400;
+                font-size: 13px;
+                color: #b0b0b0;
+            }
+
+            .velocity-input input {
+                width: 70px;
+                padding: 8px 12px;
+                background: rgba(40, 40, 40, 0.8);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 6px;
+                color: white;
+                font-family: 'Consolas', monospace;
+                font-size: 12px;
+                transition: all 0.2s ease;
+            }
+
+            .velocity-input input:focus {
+                outline: none;
+                border-color: rgba(255, 255, 255, 0.4);
+                background: rgba(50, 50, 50, 0.9);
+            }
+
+            .velocity-controls button {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                padding: 10px 18px;
+                margin: 15px 8px 0 0;
+                border-radius: 6px;
+                cursor: pointer;
+                font-family: inherit;
+                font-size: 12px;
+                font-weight: 500;
+                transition: all 0.2s ease;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .velocity-controls button:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+            }
+
+            .velocity-controls button.reset {
+                background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            }
+
+            .velocity-controls button.reset:hover {
+                box-shadow: 0 4px 16px rgba(255, 107, 107, 0.3);
+            }
+
+            .velocity-controls button.download {
+                background: linear-gradient(135deg, #48c774 0%, #34a853 100%);
+            }
+
+            .velocity-controls button.download:hover {
+                box-shadow: 0 4px 16px rgba(72, 199, 116, 0.3);
+            }
+
+            .velocity-controls button.toggle {
+                background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%);
+            }
+
+            .velocity-controls button.toggle:hover {
+                box-shadow: 0 4px 16px rgba(255, 167, 38, 0.3);
+            }
+
+            .velocity-controls button.toggle.active {
+                background: linear-gradient(135deg, #48c774 0%, #34a853 100%);
+            }
+
+            .velocity-controls button.toggle.active:hover {
+                box-shadow: 0 4px 16px rgba(72, 199, 116, 0.3);
+            }
+            .velocity-controls button.toggle {
+                background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%);
+            }
+
+            .velocity-controls button.toggle:hover {
+                box-shadow: 0 4px 16px rgba(255, 167, 38, 0.3);
+            }
+
+            .velocity-controls button.toggle.active {
+                background: linear-gradient(135deg, #48c774 0%, #34a853 100%);
+            }
+
+            .velocity-controls button.toggle.active:hover {
+                box-shadow: 0 4px 16px rgba(72, 199, 116, 0.3);
+            }
+            .velocity-controls > div:last-child {
+                margin-top: 15px;
+                font-size: 10px;
+                color: #888;
+                font-style: italic;
+            }
+        </style>
+
+        <div class="velocity-controls">
+            <h3>Instantaneous Velocity</h3>
+            <div class="velocity-input">
+                <label>X:</label>
+                <input type="number" id="velocityX" value="0" step="1" />
+            </div>
+            <div class="velocity-input">
+                <label>Y:</label>
+                <input type="number" id="velocityY" value="0" step="1" />
+            </div>
+            <div class="velocity-input">
+                <label>Z:</label>
+                <input type="number" id="velocityZ" value="0" step="1" />
+            </div>
+            <button onclick="applyVelocity()">Apply</button>
+            <button class="reset" onclick="resetVelocity()">Reset</button>
+            <button class="download" onclick="downloadPositionLog()">
+                Download CSV
+            </button>
+            <button
+                class="toggle"
+                id="toggleLoggingBtn"
+                onclick="toggleLogging()"
+            >
+                Enable Logging
+            </button>
+        </div>
+
+        <div id="canvas-container"></div>
+
+        <!-- Three.js -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+        <!-- Your JS files -->
+        <script src="./scripts/scene.js"></script>
+        <script src="./scripts/cube.js"></script>
+        <script src="./scripts/plane.js"></script>
+        <script src="./scripts/camera-controls.js"></script>
+        <script src="./scripts/surface.js"></script>
+        <script src="./scripts/gs-rigidbodysim.js"></script>
+        <script src="./scripts/debugging.js"></script>
+
+        <script>
+            // Function to download position log as CSV
+            function downloadPositionLog() {
+                if (window.scene3D && window.scene3D.rigidBodySim) {
+                    window.scene3D.rigidBodySim.savelogasCSV();
+                } else {
+                    alert(
+                        'Simulation not initialized or no log data available'
+                    );
+                }
+            }
+
+            // Function to toggle logging on/off
+            function toggleLogging() {
+                if (window.scene3D && window.scene3D.rigidBodySim) {
+                    window.scene3D.rigidBodySim.toggleLogging();
+                    const btn = document.getElementById('toggleLoggingBtn');
+                    const isEnabled =
+                        window.scene3D.rigidBodySim.loggingEnabled;
+
+                    if (isEnabled) {
+                        btn.classList.add('active');
+                        btn.textContent = 'Disable Logging';
+                    } else {
+                        btn.classList.remove('active');
+                        btn.textContent = 'Enable Logging';
+                    }
+                } else {
+                    alert('Simulation not initialized');
+                }
+            }
+        </script>
+        <script src="./scripts/friction.js"></script>
+    </body>
+</html>

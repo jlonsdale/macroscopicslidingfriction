@@ -10,7 +10,7 @@ class GSRigidBodySim {
         this.friction = friction;
 
         // Fixed timestep ~60 Hz
-        this.dt = 1 / 90;
+        this.dt = 1 / 60;
         this.gravity = new THREE.Vector3(0, -9.81, 0);
 
         // Material params
@@ -21,8 +21,8 @@ class GSRigidBodySim {
         this.penetrationSlop = 0.005; // meters allowed before correcting
 
         // Damping
-        this.linearDamping = 0.1;
-        this.angularDamping = 0.1;
+        this.linearDamping = 0.01;
+        this.angularDamping = 0.01;
 
         // Solver tuning
         this.gsIterations = 15; // 8–20 typical

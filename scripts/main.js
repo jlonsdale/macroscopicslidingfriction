@@ -30,6 +30,7 @@ class Scene3D {
 
         this.friction = null;
         this.rigidBodySim = null;
+        this.frameCount = 0;
 
         this.init();
     }
@@ -128,6 +129,11 @@ class Scene3D {
         requestAnimationFrame(() => this.animate());
         this.rigidBodySim.step();
         this.renderer.render(this.scene, this.camera);
+        //every 4 frames log cube state
+        if (this.frameCount % 4 === 0) {
+            this.cube.logCubeState();
+        }
+        this.frameCount++;
     }
 
     render() {
@@ -141,18 +147,6 @@ class Scene3D {
 
     removeObject(object) {
         this.scene.remove(object);
-    }
-
-    getScene() {
-        return this.scene;
-    }
-
-    getCamera() {
-        return this.camera;
-    }
-
-    getRenderer() {
-        return this.renderer;
     }
 
     // Setup velocity input controls
@@ -339,7 +333,7 @@ function startSimulation() {
         window.scene3D.friction = new Friction(
             window.scene3D.cubeSurface,
             window.scene3D.planeSurface,
-            5.0
+            2.0
         );
 
         // Create cube and plane
@@ -380,6 +374,45 @@ function startSimulation() {
         // Start animation loop
         window.scene3D.animate();
     }
+}
+
+// Add event listener for trajectory download
+document.addEventListener('keydown', event => {
+    if (event.key.toLowerCase() === 'c') {
+        if (window.scene3D && window.scene3D.cube) {
+            downloadTrajectoryCSV();
+        }
+    }
+});
+
+function downloadTrajectoryCSV() {
+    const cube = window.scene3D.cube;
+    const cubelog = cube.getCubeLog();
+    if (!cube || !cubelog || cubelog.length === 0) {
+        console.log('No trajectory data available');
+        return;
+    }
+
+    // Create CSV header
+    let csv = 'posX,posY,posZ,vx,vy,vz,angleFromWorldX\n';
+
+    // Add trajectory data
+    cubelog.forEach(point => {
+        csv += `${point.x},${point.y},${point.z},${point.vx},${point.vy},${point.vz},${point.angleFromWorldX}\n`;
+    });
+
+    // Create download link
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cube_trajectory_${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    console.log('Trajectory downloaded');
 }
 
 Scene3D.prototype.setupControls = function () {

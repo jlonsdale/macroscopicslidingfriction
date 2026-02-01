@@ -24,6 +24,8 @@ class Cube {
         this.texture = texture; // Store the texture parameter
         this.defaultColor = 0x0000ff; // Default blue color if no texture
 
+        this.cubelog = [];
+
         const geometry = new THREE.BoxGeometry(this.size, this.size, this.size);
         if (!texture) {
             this.material = new THREE.MeshLambertMaterial({
@@ -55,12 +57,6 @@ class Cube {
         const isClockwise = cross.z < 0;
         const signedAngle = isClockwise ? -angle : angle;
         const degrees = THREE.MathUtils.radToDeg(signedAngle);
-
-        console.log(
-            `Local X differs from world X by ${degrees.toFixed(2)} degrees ${
-                isClockwise ? '(clockwise)' : '(counter-clockwise)'
-            }`
-        );
 
         return { degrees, localX };
     }
@@ -116,5 +112,23 @@ class Cube {
 
     getKineticFriction() {
         return this.kineticFriction;
+    }
+
+    logCubeState() {
+        const { degrees, _ } = this.getLocalXDirection();
+
+        this.cubelog.push({
+            x: this.position.x,
+            y: this.position.y,
+            z: this.position.z,
+            vx: this.velocity.x,
+            vy: this.velocity.y,
+            vz: this.velocity.z,
+            angleFromWorldX: degrees,
+        });
+    }
+
+    getCubeLog() {
+        return this.cubelog;
     }
 }
