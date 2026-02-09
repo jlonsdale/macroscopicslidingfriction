@@ -78,29 +78,17 @@ class Surface {
         for (let i = 0; i < vertices.length; i += 3) {
             const x = vertices[i];
             const y = vertices[i + 1];
-            if (!this.isAnisotropic) {
-                // Isotropic surface: waves in multiple directions
-                const waveX =
-                    this.amplitude *
-                    Math.sin(((2 * Math.PI) / this.wavelength) * x);
-                const waveY =
-                    this.amplitude *
-                    Math.sin(((2 * Math.PI) / this.wavelength) * y);
-                const wave = (waveX + waveY) / 2;
-                vertices[i + 2] = wave;
-                vertices[i + 2] += (Math.random() - 0.5) * this.noise;
-            } else {
-                // Apply rotation to the coordinate system before calculating the wavfe
-                const cosR = Math.cos(this.rotation);
-                const sinR = Math.sin(this.rotation);
-                const rotatedX = x * cosR - y * sinR;
 
-                const wave =
-                    this.amplitude *
-                    Math.sin(((2 * Math.PI) / this.wavelength) * rotatedX);
-                vertices[i + 2] = wave;
-                vertices[i + 2] += (Math.random() - 0.5) * this.noise;
-            }
+            const cosR = Math.cos(this.rotation);
+            const sinR = Math.sin(this.rotation);
+
+            const rotatedX = x * cosR - y * sinR;
+
+            const wave =
+                this.amplitude *
+                Math.sin(((2 * Math.PI) / this.wavelength) * rotatedX);
+            vertices[i + 2] = wave;
+            vertices[i + 2] += (Math.random() - 0.5) * this.noise;
         }
 
         geometry.attributes.position.needsUpdate = true;

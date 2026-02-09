@@ -30,6 +30,7 @@ class Scene3D {
 
         this.friction = null;
         this.rigidBodySim = null;
+        this.frictionscaling = 3.0;
         this.frameCount = 0;
 
         this.init();
@@ -200,7 +201,7 @@ class Scene3D {
 }
 
 // Global functions for velocity control
-function applyVelocity() {
+async function applyVelocity() {
     let cube = window?.scene3D?.cube;
 
     const x = parseFloat(document.getElementById('velocityX').value) || 0;
@@ -209,27 +210,6 @@ function applyVelocity() {
 
     if (cube) {
         window.scene3D.cube.setVelocity(new THREE.Vector3(x, y, z));
-    }
-
-    // Get cube's current local X direction and use it to update surface rotation
-    const { degrees, localX } = cube.getLocalXDirection();
-    const rotationAngle = Math.atan2(localX.z, localX.x);
-    if (Math.abs(degrees) > ANGLE_THRESHOLD) {
-        console.log('Rerendering Friction Cone');
-        // Update cube surface rotation
-        //window.scene3D.cubeSurface.rotateSurface(rotationAngle);
-
-        // Recreate friction object with updated surface to ensure directional profile updates
-        window.scene3D.friction = new Friction(
-            window.scene3D.cubeSurface,
-            window.scene3D.planeSurface,
-            5.0
-        );
-
-        // Update directional profile graph
-        updateDirectionalProfileGraph(
-            window.scene3D.friction.directionalProfile()
-        );
     }
 }
 
@@ -333,7 +313,7 @@ function startSimulation() {
         window.scene3D.friction = new Friction(
             window.scene3D.cubeSurface,
             window.scene3D.planeSurface,
-            2.0
+            window.scene3D.frictionscaling
         );
 
         // Create cube and plane
@@ -375,6 +355,25 @@ function startSimulation() {
         window.scene3D.animate();
     }
 }
+
+// Add event listener for range slider
+document.addEventListener('DOMContentLoaded', () => {
+    const rangeSlider = document.getElementById('rangeValue');
+    if (rangeSlider) {
+        rangeSlider.addEventListener('input', function () {
+            // Update display or handle range value change
+            const rangeDisplay = document.getElementById('rangeDisplay');
+            if (rangeDisplay) {
+                rangeDisplay.textContent = this.value;
+            }
+            window.scene3D.frictionscaling = this.value;
+            startSimulation();
+            updateDirectionalProfileGraph(
+                window.scene3D.friction.directionalProfile()
+            );
+        });
+    }
+});
 
 // Add event listener for trajectory download
 document.addEventListener('keydown', event => {

@@ -66,6 +66,18 @@
             <input type="file" id="obj1" accept=".obj" />
             <label>Upload second .obj surface:</label>
             <input type="file" id="obj2" accept=".obj" />
+            <div>
+                <label>Select value (1-6):</label>
+                <input
+                    type="range"
+                    id="rangeValue"
+                    min="1"
+                    max="6"
+                    value="4"
+                    step="1"
+                />
+                <span id="rangeDisplay">4</span>
+            </div>
             <button
                 id="start-button"
                 disabled
