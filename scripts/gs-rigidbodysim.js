@@ -1,58 +1,73 @@
 class GSRigidBodySim {
     /**
-     * Construct a simulation scene holding a single rigid cube above a static infinite plane.
-     * The solver runs at a fixed timestep (dt) and applies gravity, detects/solves
-     * multiple contacts (all vertices touching/penetrating), and integrates motion.
+     * Rigid-body simulation for a single cube on a static plane.
+     * Uses fixed-timestep integration, multi-contact detection (all cube
+     * vertices), and a Projected Gauss-Seidel (sequential impulse) solver
+     * with Baumgarte stabilisation and warm starting.
+     *
+     * @param {Cube}     cube     - The dynamic rigid body.
+     * @param {Plane}    plane    - The static collision surface.
+     * @param {Friction} friction - Direction-dependent friction model.
      */
     constructor(cube, plane, friction) {
         this.cube = cube;
         this.plane = plane;
         this.friction = friction;
 
-        // Fixed timestep ~60 Hz
-        this.dt = 1 / 60;
+        // Time & gravity
+        this.dt = 1 / 60; // fixed timestep (~60 Hz)
         this.gravity = new THREE.Vector3(0, -9.81, 0);
 
-        // Material params
-        this.restitution = 0.05; // 0 = inelastic, 1 = perfectly elastic
+        // Material
+        this.restitution = 0.05; // coefficient of restitution [0, 1]
 
-        // Stabilization (Baumgarte) and slop
-        this.beta = 0.1; // error reduction parameter [0..1]
-        this.penetrationSlop = 0.005; // meters allowed before correcting
+        // Baumgarte stabilisation
+        this.beta = 0.1; // error-reduction parameter [0, 1]
+        this.penetrationSlop = 0.005; // allowed overlap before correction (m)
 
-        // Damping
+        // Velocity damping
         this.linearDamping = 0.01;
         this.angularDamping = 0.01;
 
         // Solver tuning
-        this.gsIterations = 15; // 8–20 typical
-        this.warmStartEnabled = true; // persist impulses across frames
-        this.maxPreCorrectionContacts = 4; // cap position nudges to avoid over-correction
+        this.gsIterations = 15; // PGS iterations per frame (8-20 typical)
+        this.warmStartEnabled = true; // reuse impulses across frames
+        this.maxPreCorrectionContacts = 4; // cap positional nudges per step
+        this.minEffectiveMass = 1e-8; // guard against division by zero
 
-        // State flags
+        // Runtime state
         this.inContact = false;
         this.loggingEnabled = false;
         this.atrest = false;
 
-        // Warm-start cache (from previous frame). We match by approximate r vector.
-        this._prevContacts = []; // each: { r: THREE.Vector3, lambda_n, lambda_t1, lambda_t2 }
-
-        // Start state
+        // Warm-start cache: matched by approximate r-vector each frame
+        this._prevContacts = [];
     }
 
-    // --- math helpers --------------------------------------------------------
+    // ── Maths helpers ─────────────────────────────────────────────────────
 
+    /** Convert a quaternion to a 3×3 rotation matrix. */
     _quatToMatrix3(q) {
         const m = new THREE.Matrix3();
         m.setFromMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(q));
         return m;
     }
 
+    /** Compute the world-space inverse inertia tensor: I_world⁻¹ = R · I_body⁻¹ · Rᵀ */
     _worldInertiaTensorInv(cube) {
-        // I_world^{-1} = R * I_body^{-1} * R^T
-        const Ibody = cube.getInertia(); // THREE.Vector3 principal moments
+        const Ibody = cube.getInertia();
         const ib = new THREE.Matrix3();
-        ib.set(1 / Ibody.x, 0, 0, 0, 1 / Ibody.y, 0, 0, 0, 1 / Ibody.z);
+        ib.set(
+            this._safeReciprocal(Ibody.x),
+            0,
+            0,
+            0,
+            this._safeReciprocal(Ibody.y),
+            0,
+            0,
+            0,
+            this._safeReciprocal(Ibody.z)
+        );
         const R = this._quatToMatrix3(cube.getMesh().quaternion);
         const Rt = new THREE.Matrix3().copy(R).transpose();
         const temp = new THREE.Matrix3().multiplyMatrices(R, ib);
@@ -60,8 +75,25 @@ class GSRigidBodySim {
         return Iinv;
     }
 
+    /** Return 1/value, or 0 if value is near-zero. */
+    _safeReciprocal(value) {
+        return Math.abs(value) > this.minEffectiveMass ? 1 / value : 0;
+    }
+
+    /** Return numerator/denominator, or 0 if denominator is near-zero. */
+    _safeDivide(numerator, denominator) {
+        return Math.abs(denominator) > this.minEffectiveMass
+            ? numerator / denominator
+            : 0;
+    }
+
+    /** Inverse mass of a body (safe against zero-mass). */
+    _getInvMass(cube) {
+        return this._safeReciprocal(cube.getMass());
+    }
+
+    /** Multiply a Matrix3 by a Vector3 (THREE stores elements column-major in toArray). */
     _mat3MulVec3(M, v) {
-        // Helper: THREE.Matrix3 (row-major in toArray) times THREE.Vector3
         const a = M.toArray();
         return new THREE.Vector3(
             a[0] * v.x + a[1] * v.y + a[2] * v.z,
@@ -70,12 +102,15 @@ class GSRigidBodySim {
         );
     }
 
+    /**
+     * Apply a linear + angular impulse to the body.
+     * Linear:  v' = v + J / m
+     * Angular: ω' = ω + I⁻¹ (r × J)
+     */
     _applyImpulse(cube, r, impulse, Iinv) {
-        // Apply linear: v' = v + J/m
-        const invMass = 1 / cube.getMass();
+        const invMass = this._getInvMass(cube);
         const v = cube.getVelocity().clone().addScaledVector(impulse, invMass);
 
-        // Apply angular: w' = w + I^{-1}(r × J)
         const rXJ = new THREE.Vector3().copy(r).cross(impulse);
         const angDelta = this._mat3MulVec3(Iinv, rXJ);
         const w = cube.getAngularVelocity().clone().add(angDelta);
@@ -84,22 +119,29 @@ class GSRigidBodySim {
         cube.setAngularVelocity(w);
     }
 
+    /**
+     * Semi-implicit Euler integration with linear/angular damping.
+     * Updates position, orientation, and syncs the Three.js mesh.
+     */
     _integrate(cube, dt) {
-        // Semi-implicit Euler with small damping
+        // Velocity: apply gravity then damp
         const v = cube.getVelocity().clone().addScaledVector(this.gravity, dt);
         v.multiplyScalar(1 - this.linearDamping);
         cube.setVelocity(v);
 
+        // Position: advance by new velocity; reset on NaN to prevent runaway
         const x = cube.getPosition().clone().addScaledVector(v, dt);
         if (!isFinite(x.x) || !isFinite(x.y) || !isFinite(x.z)) {
             x.set(0, 2, 0);
         }
         cube.setPosition(x);
 
+        // Angular velocity: damp
         const w = cube.getAngularVelocity().clone();
         w.multiplyScalar(1 - this.angularDamping);
         cube.setAngularVelocity(w);
 
+        // Orientation: quaternion derivative dq = ½ · [ω, 0] · q
         const q = cube.getMesh().quaternion.clone();
         const halfDt = 0.5 * dt;
         const dq = new THREE.Quaternion(
@@ -113,15 +155,20 @@ class GSRigidBodySim {
         q.z += dq.z;
         q.w += dq.w;
         q.normalize();
+
+        // Sync mesh transform
         cube.getMesh().quaternion.copy(q);
         cube.getMesh().position.copy(x);
     }
 
-    // ---------------- contact generation (multi) -----------------------------
+    // ── Contact generation ───────────────────────────────────────────────
 
     /**
-     * Collect ALL contacts (one per vertex that is at or below the plane).
-     * Returns array of contact objects with fields filled/initialized.
+     * Test every cube vertex against the plane and return a contact
+     * descriptor for each vertex that is at or below the surface.
+     *
+     * @returns {Array<Object>} Contacts with normal, r-vector, projected
+     *          point, penetration depth, and zeroed impulse accumulators.
      */
     _collectContacts() {
         const contacts = [];
@@ -145,29 +192,28 @@ class GSRigidBodySim {
         const com = this.cube.getPosition();
 
         for (const c of corners) {
-            const r = c.clone().applyMatrix3(R3); // local corner rotated into world
-            const worldPt = com.clone().add(r); // point in world
-            const phi = n.dot(new THREE.Vector3().subVectors(worldPt, p0));
+            const r = c.clone().applyMatrix3(R3); // body-space → world offset
+            const worldPt = com.clone().add(r); // world-space vertex position
+            const phi = n.dot(new THREE.Vector3().subVectors(worldPt, p0)); // signed distance
+
             if (phi <= 0) {
-                // Project the penetrating corner onto the plane surface
+                // Project penetrating vertex onto the plane surface
                 const projectedPt = worldPt.clone().addScaledVector(n, -phi);
 
-                // Check if the projected point is actually on the finite plane geometry
+                // Only keep contacts within the finite plane bounds
                 if (this.plane.isOnPlane(projectedPt)) {
                     contacts.push({
-                        n: n.clone(),
-                        r,
-                        point: projectedPt, // Use projected point instead of corner
-                        depth: -phi,
-                        // Will be set in precompute:
-                        t1: null,
+                        n: n.clone(), // contact normal (plane → cube)
+                        r, // world offset from COM to vertex
+                        point: projectedPt, // contact point on the plane surface
+                        depth: -phi, // penetration depth (positive)
+                        t1: null, // tangent basis (set in precompute)
                         t2: null,
-                        K_n: 0,
+                        K_n: 0, // effective masses (set in precompute)
                         K_t1: 0,
                         K_t2: 0,
-                        bias: 0,
-                        // Accumulated impulses (warm starting):
-                        lambda_n: 0,
+                        bias: 0, // Baumgarte bias velocity
+                        lambda_n: 0, // accumulated impulses (normal + friction)
                         lambda_t1: 0,
                         lambda_t2: 0,
                     });
@@ -178,8 +224,9 @@ class GSRigidBodySim {
     }
 
     /**
-     * Backwards-compatible helper: returns only the deepest contact or null.
-     * (Kept for reference/testing; GS path uses _collectContacts instead.)
+     * Return the single deepest contact, or null if no contact exists.
+     * Convenience wrapper kept for external callers; the solver itself
+     * uses _collectContacts() for multi-contact resolution.
      */
     detectContact() {
         const all = this._collectContacts();
@@ -195,14 +242,20 @@ class GSRigidBodySim {
         };
     }
 
-    // ---------------- GS solver building blocks ------------------------------
+    // ── Gauss-Seidel solver ──────────────────────────────────────────────
 
+    /**
+     * Fill in derived per-contact quantities needed by the solver:
+     *   - Tangent basis (t1, t2) aligned with the sliding velocity direction
+     *   - Effective mass scalars (K_n, K_t1, K_t2)
+     *   - Baumgarte bias velocity for penetration recovery
+     */
     _precomputeContacts(contacts, Iinv, invMass) {
         const dt = this.dt;
         for (const c of contacts) {
             const n = c.n;
 
-            // Relative velocity at contact to choose a "meaningful" tangent
+            // Tangential velocity at contact (used to orient the friction basis)
             const vRel = this.cube
                 .getVelocity()
                 .clone()
@@ -213,22 +266,23 @@ class GSRigidBodySim {
                 );
             const vt = vRel.clone().addScaledVector(n, -n.dot(vRel));
 
+            // t1: align with sliding direction when possible, otherwise Gram-Schmidt
             let t1;
             if (vt.lengthSq() > 1e-12) {
                 t1 = vt.normalize();
             } else {
-                // Pick any vector not parallel to n, then Gram–Schmidt
                 t1 =
                     Math.abs(n.y) < 0.9
                         ? new THREE.Vector3(0, 1, 0)
                         : new THREE.Vector3(1, 0, 0);
                 t1.sub(n.clone().multiplyScalar(t1.dot(n))).normalize();
             }
+            // t2: completes the orthonormal contact basis
             const t2 = new THREE.Vector3().copy(n).cross(t1).normalize();
             c.t1 = t1;
             c.t2 = t2;
 
-            // Effective mass along a direction dir: K = 1/m + dir · [ (I^{-1}(r×dir)) × r ]
+            // Effective mass: K = 1/m + dir · [(I⁻¹(r × dir)) × r]
             const effectiveMass = direction => {
                 const rxd = new THREE.Vector3().copy(c.r).cross(direction);
                 const Iinv_rxd = this._mat3MulVec3(Iinv, rxd);
@@ -241,7 +295,7 @@ class GSRigidBodySim {
             c.K_t1 = effectiveMass(t1);
             c.K_t2 = effectiveMass(t2);
 
-            // Baumgarte bias (velocity units)
+            // Baumgarte bias: velocity-level correction for penetration beyond slop
             c.bias =
                 c.depth > this.penetrationSlop
                     ? (this.beta / dt) * (c.depth - this.penetrationSlop)
@@ -249,10 +303,10 @@ class GSRigidBodySim {
         }
     }
 
+    /** Transfer accumulated impulses from the previous frame's closest matching contact. */
     _matchWarmStart(contacts) {
-        // Copy lambdas from last frame by nearest r (within tolerance)
         if (!this.warmStartEnabled || !this._prevContacts.length) return;
-        const tolSq = 1e-6; // ~1 mm in r space depending on scale
+        const tolSq = 1e-6; // squared distance threshold for matching r-vectors
         for (const c of contacts) {
             let best = null,
                 bestD = Infinity;
@@ -271,6 +325,7 @@ class GSRigidBodySim {
         }
     }
 
+    /** Apply the warm-started impulses to seed the solver closer to the solution. */
     _warmStartApply(contacts, Iinv) {
         if (!this.warmStartEnabled) return;
         for (const c of contacts) {
@@ -284,115 +339,146 @@ class GSRigidBodySim {
         }
     }
 
+    /**
+     * Projected Gauss-Seidel (sequential impulse) solver.
+     * Iterates over all contacts, resolving normal non-penetration first,
+     * then anisotropic Coulomb friction along both tangent axes.
+     *
+     * @param {Array<Object>}  contacts - Contacts with precomputed basis and effective masses.
+     * @param {THREE.Matrix3}  Iinv     - World-space inverse inertia tensor.
+     */
     _solveContactsGS(contacts, Iinv) {
-        const cube = this.cube;
+        const body = this.cube;
+
+        // Below this squared speed the sliding direction is treated as zero
+        const SLIDING_EPS_SQ = 0.1;
 
         for (let it = 0; it < this.gsIterations; ++it) {
             for (const c of contacts) {
-                // All contacts are already validated to be on the plane during detection
-                // --- normal ---
-                let v = cube.getVelocity();
-                let w = cube.getAngularVelocity();
-                let vRel = v
-                    .clone()
-                    .add(new THREE.Vector3().copy(w).cross(c.r));
-                const vn = c.n.dot(vRel);
+                // Relative velocity at the contact point: vRel = v + ω × r
+                const getContactRelVel = () => {
+                    const v = body.getVelocity();
+                    const w = body.getAngularVelocity();
+                    return v
+                        .clone()
+                        .add(new THREE.Vector3().copy(w).cross(c.r));
+                };
 
-                let dLambda_n = -(vn + c.bias) / c.K_n;
-                const lambda_n_new = Math.max(c.lambda_n + dLambda_n, 0);
-                dLambda_n = lambda_n_new - c.lambda_n;
-                c.lambda_n = lambda_n_new;
-                if (dLambda_n !== 0) {
-                    const Jn = c.n.clone().multiplyScalar(dLambda_n);
-                    this._applyImpulse(cube, c.r, Jn, Iinv);
+                // 1) Normal constraint (non-penetration)
+                {
+                    const vRel = getContactRelVel();
+                    const vn = c.n.dot(vRel);
+
+                    // Δλ_n = -(vn + bias) / K_n, clamped so λ_n >= 0 (no adhesion)
+                    let dLambdaN = this._safeDivide(-(vn + c.bias), c.K_n);
+                    const lambdaNNew = Math.max(c.lambda_n + dLambdaN, 0);
+                    dLambdaN = lambdaNNew - c.lambda_n;
+                    c.lambda_n = lambdaNNew;
+
+                    if (dLambdaN !== 0) {
+                        const Jn = c.n.clone().multiplyScalar(dLambdaN);
+                        this._applyImpulse(body, c.r, Jn, Iinv);
+                    }
                 }
 
-                // --- friction t1 ---
-                v = cube.getVelocity();
-                w = cube.getAngularVelocity();
-                vRel = v.clone().add(new THREE.Vector3().copy(w).cross(c.r));
-                const vt1 = c.t1.dot(vRel);
-                let dLambda_t1 = -vt1 / c.K_t1;
+                // 2) Anisotropic friction coefficients
+                const vRelForFriction = getContactRelVel();
 
-                // Calculate sliding direction for anisotropic friction
-                const vSliding = vRel
+                // Tangential (sliding) velocity: remove normal component
+                const vSliding = vRelForFriction
                     .clone()
-                    .addScaledVector(c.n, -c.n.dot(vRel));
+                    .addScaledVector(c.n, -c.n.dot(vRelForFriction));
+
+                // Sliding direction angle in the XZ plane (zero when nearly stationary)
                 let slidingAngle = 0;
-                if (vSliding.lengthSq() > 0.1) {
-                    // Project sliding velocity to XZ plane and get angle
+                if (vSliding.lengthSq() > SLIDING_EPS_SQ) {
                     slidingAngle = Math.atan2(vSliding.z, vSliding.x);
                 }
 
-                // Get anisotropic friction coefficients (in radians)
-                const muS_contact = this.friction.getMuAtAngle(
+                // Static μ uses a 1.3× angle scale (heuristic wider static cone)
+                const muS = this.friction.getMuAtAngle(
                     Math.abs(slidingAngle * 1.3)
                 );
-                const muK_contact = this.friction.getMuAtAngle(
-                    Math.abs(slidingAngle)
-                );
+                const muK = this.friction.getMuAtAngle(Math.abs(slidingAngle));
 
-                // Static cone test: maximum = μ_s * lambda_n; if exceeded => kinetic (μ_k)
-                const maxStatic = muS_contact * c.lambda_n;
-                let lambda_t1_candidate = c.lambda_t1 + dLambda_t1;
-                let maxF = maxStatic;
-                if (Math.abs(lambda_t1_candidate) > maxStatic)
-                    maxF = muK_contact * c.lambda_n;
+                // Maximum static friction force (based on current normal impulse)
+                const maxStatic = muS * c.lambda_n;
 
-                const lambda_t1_new = THREE.MathUtils.clamp(
-                    c.lambda_t1 + dLambda_t1,
-                    -maxF,
-                    +maxF
-                );
-                dLambda_t1 = lambda_t1_new - c.lambda_t1;
-                c.lambda_t1 = lambda_t1_new;
-                if (dLambda_t1 !== 0) {
-                    const Jt1 = c.t1.clone().multiplyScalar(dLambda_t1);
-                    this._applyImpulse(cube, c.r, Jt1, Iinv);
+                // 3) Friction along t1 (boxed Coulomb: static/kinetic switch)
+                {
+                    const vRel = getContactRelVel();
+                    const vt1 = c.t1.dot(vRel);
+
+                    let dLambdaT1 = this._safeDivide(-vt1, c.K_t1);
+
+                    // Switch to kinetic limit if candidate exceeds static threshold
+                    const lambdaT1Candidate = c.lambda_t1 + dLambdaT1;
+                    const maxF =
+                        Math.abs(lambdaT1Candidate) > maxStatic
+                            ? muK * c.lambda_n
+                            : maxStatic;
+
+                    // Clamp to friction cone box [-maxF, +maxF]
+                    const lambdaT1New = THREE.MathUtils.clamp(
+                        lambdaT1Candidate,
+                        -maxF,
+                        +maxF
+                    );
+
+                    dLambdaT1 = lambdaT1New - c.lambda_t1;
+                    c.lambda_t1 = lambdaT1New;
+
+                    if (dLambdaT1 !== 0) {
+                        const Jt1 = c.t1.clone().multiplyScalar(dLambdaT1);
+                        this._applyImpulse(body, c.r, Jt1, Iinv);
+                    }
                 }
 
-                // --- friction t2 ---
-                v = cube.getVelocity();
-                w = cube.getAngularVelocity();
-                vRel = v.clone().add(new THREE.Vector3().copy(w).cross(c.r));
-                const vt2 = c.t2.dot(vRel);
-                let dLambda_t2 = -vt2 / c.K_t2;
+                // 4) Friction along t2 (same boxed Coulomb logic as t1)
+                {
+                    const vRel = getContactRelVel();
+                    const vt2 = c.t2.dot(vRel);
 
-                // Use same anisotropic friction coefficients as t1
-                let lambda_t2_candidate = c.lambda_t2 + dLambda_t2;
-                maxF =
-                    Math.abs(lambda_t2_candidate) > maxStatic
-                        ? muK_contact * c.lambda_n
-                        : maxStatic;
+                    let dLambdaT2 = this._safeDivide(-vt2, c.K_t2);
 
-                const lambda_t2_new = THREE.MathUtils.clamp(
-                    c.lambda_t2 + dLambda_t2,
-                    -maxF,
-                    +maxF
-                );
-                dLambda_t2 = lambda_t2_new - c.lambda_t2;
-                c.lambda_t2 = lambda_t2_new;
-                if (dLambda_t2 !== 0) {
-                    const Jt2 = c.t2.clone().multiplyScalar(dLambda_t2);
-                    this._applyImpulse(cube, c.r, Jt2, Iinv);
+                    const lambdaT2Candidate = c.lambda_t2 + dLambdaT2;
+                    const maxF =
+                        Math.abs(lambdaT2Candidate) > maxStatic
+                            ? muK * c.lambda_n
+                            : maxStatic;
+
+                    const lambdaT2New = THREE.MathUtils.clamp(
+                        lambdaT2Candidate,
+                        -maxF,
+                        +maxF
+                    );
+
+                    dLambdaT2 = lambdaT2New - c.lambda_t2;
+                    c.lambda_t2 = lambdaT2New;
+
+                    if (dLambdaT2 !== 0) {
+                        const Jt2 = c.t2.clone().multiplyScalar(dLambdaT2);
+                        this._applyImpulse(body, c.r, Jt2, Iinv);
+                    }
                 }
             }
         }
     }
 
-    // ---------------- main step ----------------------------------------------
+    // ── Simulation step ─────────────────────────────────────────────────
 
+    /** Advance the simulation by one fixed timestep. */
     step() {
         const cube = this.cube;
-        const invMass = 1 / cube.getMass();
+        const invMass = this._getInvMass(cube);
         const Iinv = this._worldInertiaTensorInv(cube);
 
-        // 1) Collect all contacts at/below plane
-        const contacts = this._collectContacts();
+        // 1) Detect contacts (every vertex at or below the plane)
+        let contacts = this._collectContacts();
         this.inContact = contacts.length > 0;
 
-        // 2) Small positional pre-correction to avoid large overlaps (cap number)
-        // Distribute correction across contacts to avoid excessive push.
+        // 2) Positional pre-correction: push the body out of deep overlaps,
+        //    distributing the correction evenly across contacts (capped).
         let corrected = 0;
         for (const c of contacts) {
             if (corrected >= this.maxPreCorrectionContacts) break;
@@ -413,19 +499,25 @@ class GSRigidBodySim {
             }
         }
 
-        // 3) Precompute per-contact data: tangents, K's, bias
+        // Recompute contacts after correction so the solver uses fresh geometry
+        if (corrected > 0) {
+            contacts = this._collectContacts();
+            this.inContact = contacts.length > 0;
+        }
+
+        // 3) Precompute tangent basis, effective masses, and Baumgarte bias
         this._precomputeContacts(contacts, Iinv, invMass);
 
-        // 4) Warm start: copy lambdas from previous frame & apply them
+        // 4) Warm-start: seed solver with impulses from the previous frame
         this._matchWarmStart(contacts);
         this._warmStartApply(contacts, Iinv);
 
-        // 5) Gauss–Seidel (sequential impulses) over contacts
+        // 5) PGS solve: iteratively resolve normal + friction constraints
         if (contacts.length) {
             this._solveContactsGS(contacts, Iinv);
         }
 
-        // Cache lambdas for next frame warm starting
+        // 6) Cache impulses for next-frame warm starting
         this._prevContacts = contacts.map(c => ({
             r: c.r.clone(),
             lambda_n: c.lambda_n,
@@ -433,7 +525,7 @@ class GSRigidBodySim {
             lambda_t2: c.lambda_t2,
         }));
 
-        // 6) Integrate free motion
+        // 7) Integrate velocity and position (semi-implicit Euler)
         this._integrate(cube, this.dt);
     }
 }
